@@ -26,6 +26,8 @@ from user.serializers import (
 
 from user.filters import UserFilter
 
+from django.utils import timezone
+
 from django.shortcuts import get_object_or_404
 
 from drf_spectacular.utils import extend_schema
@@ -115,12 +117,39 @@ class ListUserLogsView(generics.ListAPIView):
         return super().get(request, *args, **kwargs)
     
 
-class CreateTokenView(ObtainAuthToken):
+class CreateTokenView(generics.CreateAPIView): #(ObtainAuthToken):
     """Create a new auth toker for user."""
+    #serializer_class = AuthTokenSerializer
+    #throttle_classes = [LogInThrottle]
     serializer_class = AuthTokenSerializer
-    throttle_classes = [LogInThrottle]
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
 
+
+    def get_user_sessions(self, user):
+    # Ensure the user instance is of the correct type
+        User = get_user_model()
+        if not isinstance(user, User):
+            raise ValueError("The 'user' parameter must be an instance of the User model.")
+
+        # Get all non-expired sessions
+        sessions = Session.objects.filter(login_time__gte=timezone.now())
+        user_sessions = []
+
+        for session in sessions:
+            data = session.get_decoded()
+            # Check if this session is associated with the user
+            if data.get('_auth_user_id') == str(user.id):
+                user_sessions.append(session)
+
+        return user_sessions
+
+    def get_user_last_session_key(self, user):
+        user_sessions = self.get_user_sessions(user)
+        if user_sessions:
+            # Assuming the last session is the one with the most recent expiration date
+            last_session = max(user_sessions, key=lambda s: s.login_time)
+            return last_session.session_key
+        return None
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -128,29 +157,30 @@ class CreateTokenView(ObtainAuthToken):
 
 
         user = serializer.validated_data.get('user')
-
         if not user:
             return Response({'message' : 'Credenciales inválidos'}, status=status.HTTP_401_UNAUTHORIZED)
 
         if(isinstance(user, AnonymousUser)):
             return Response({'message'  : 'El usuario no está registrado'}, status= status.HTTP_404_NOT_FOUND)
         
-        Session.login(request=request)
+        Session.login(request.user, request=request)
+        print(user.is_authenticated)
+
         response_serializer  = UserSerializer(instance = user)
-        return Response(data = response_serializer.data, status=status.HTTP_200_OK)
+        data = response_serializer.data
+        
+        data['sessionid'] = self.get_user_last_session_key(user)
+        return Response(data = data, status=status.HTTP_200_OK)
 
 
 
-from django.views.decorators.csrf import csrf_exempt
-
-
-class LogoutView(generics.CreateAPIView):
-    serializer_class = UserSerializer
+class LogoutView(views.APIView):
+    
     permission_classes = [permissions.IsAuthenticated, IsLogged]
     def post(self, request, *args, **kwargs):
         if(isinstance(request.user, AnonymousUser)):
             return Response(status=status.HTTP_412_PRECONDITION_FAILED)
-        Session.logout(request=request)
+        Session.logout(request.user, request=request)
         return Response(status=status.HTTP_202_ACCEPTED)
 
 
@@ -184,6 +214,25 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
             raise MissingQueryParameterException(detail="Ingrese el parámetro de email")
         return get_object_or_404(get_user_model(), email = email_param)
 
+
+class CreateUserView(generics.CreateAPIView):
+    """Edit user profiles"""
+    serializer_class = UserSerializer
+
+    @extend_schema(parameters=[
+        OpenApiParameter(
+            name='email',
+            description="Find users by their email.",
+            required=True,
+            type=bool
+        )
+    ])
+    def get_object(self):
+        """Retrieve and return the user by its email."""
+        email_param = self.request.query_params.get('email', None)
+        if not email_param:
+            raise MissingQueryParameterException(detail="Ingrese el parámetro de email")
+        return get_object_or_404(get_user_model(), email = email_param)
 
 
 class HealthCheck(views.APIView):
