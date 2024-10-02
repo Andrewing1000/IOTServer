@@ -184,10 +184,8 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
             raise MissingQueryParameterException(detail="Ingrese el parámetro de email")
         return get_object_or_404(get_user_model(), email = email_param)
 
-'''class CreateUserView(generics.CreateAPIView):
-    serializer_class = UserSerializer
 
-'''
+
 class HealthCheck(views.APIView):
     serializer_class = HealthCheckSerializer
     def get(self, request, *args, **kargs):

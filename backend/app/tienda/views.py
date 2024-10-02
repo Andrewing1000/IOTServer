@@ -25,20 +25,14 @@ class SineSeriesViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if not user.is_authenticated:
-            raise exceptions.PermissionDenied("Debe autenticarse primero")
         return self.queryset.filter(user=user)
     
     def perform_create(self, serializer):
         user = self.request.user
-        if not user.is_authenticated:
-            raise exceptions.PermissionDenied("Debe autenticarse primero")
         serializer.save(user=user)
 
     def perform_update(self, serializer):
         user = self.request.user
-        if not user.is_authenticated:
-            raise exceptions.PermissionDenied("Debe autenticarse primero")
         serializer.save(user=user)
 
 
@@ -49,44 +43,32 @@ class CosineSeriesViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if not user.is_authenticated:
-            raise exceptions.PermissionDenied("Debe autenticarse primero")
         return self.queryset.filter(user=user)
     
     def perform_create(self, serializer):
         user = self.request.user
-        if not user.is_authenticated:
-            raise exceptions.PermissionDenied("Debe autenticarse primero")
         serializer.save(user=user)
 
     def perform_update(self, serializer):
         user = self.request.user
-        if not user.is_authenticated:
-            raise exceptions.PermissionDenied("Debe autenticarse primero")
         serializer.save(user=user)
 
 
-class TangetSeriesViewSet(viewsets.ModelViewSet):
+class TangentSeriesViewSet(viewsets.ModelViewSet):
     queryset = TangentAproximation.objects.all()
     serializer_class = TangentSeriesSerializer
     permission_classes = [IsLogged]
 
     def get_queryset(self):
         user = self.request.user
-        if not user.is_authenticated:
-            raise exceptions.PermissionDenied("Debe autenticarse primero")
         return self.queryset.filter(user=user)
     
     def perform_create(self, serializer):
         user = self.request.user
-        if not user.is_authenticated:
-            raise exceptions.PermissionDenied("Debe autenticarse primero")
         serializer.save(user=user)
 
     def perform_update(self, serializer):
         user = self.request.user
-        if not user.is_authenticated:
-            raise exceptions.PermissionDenied("Debe autenticarse primero")
         serializer.save(user=user)
 
 

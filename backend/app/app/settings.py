@@ -169,7 +169,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'core.User'
 
-'''REST_FRAMEWORK = {
+REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 
 
@@ -183,15 +183,15 @@ AUTH_USER_MODEL = 'core.User'
 
     ],
 
-    'DEFAULT_THROTTLE_RATES': {
+    #'DEFAULT_THROTTLE_RATES': {
 
-        'anon': '20/min',
+        #'anon': '20/min',
 
-        'user': '50/min',
+        #'user': '50/min',
 
-        'login' : '3/min',
-    },
-}'''
+        #'login' : '3/min',
+    #},
+}
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'

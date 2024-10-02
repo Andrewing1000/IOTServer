@@ -82,6 +82,7 @@ class SineSeriesSerializer(serializers.ModelSerializer):
 
 class CosineSeriesSerializer(serializers.ModelSerializer):
     with_error = serializers.SerializerMethodField()
+    m = serializers.IntegerField()
     class Meta:
         model = CosineAproximation
         fields = ['n', 'term' ,'error', 'with_error', 'm']
@@ -113,8 +114,6 @@ class CosineSeriesSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         m = validated_data.get('m', None)
-        if not m: 
-            raise exceptions.NotAcceptable('Ingrese el numero de terminos')
         m0 = CosineAproximation.objects.values_list('n', flat=True).last()
         if not m0:
             m0=0
@@ -135,7 +134,7 @@ class CosineSeriesSerializer(serializers.ModelSerializer):
     
 class TangentSeriesSerializer(serializers.ModelSerializer):
     with_error = serializers.SerializerMethodField()
-    
+    m = serializers.IntegerField()
     class Meta:
         model = TangentAproximation
         fields = ['n', 'term', 'error', 'with_error', 'm']
@@ -148,8 +147,6 @@ class TangentSeriesSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         m = validated_data.get('m', None)
-        if not m:
-            raise exceptions.NotAcceptable('Ingrese el número de términos')
 
         instances = []
         user = validated_data.get('user')  # Assume `user` comes from validated data
@@ -170,9 +167,6 @@ class TangentSeriesSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         m = validated_data.get('m', None)
-        if not m:
-            raise exceptions.NotAcceptable('Ingrese el número de términos')
-
         m0 = TangentAproximation.objects.values_list('n', flat=True).last() or 0
 
         instances = []
