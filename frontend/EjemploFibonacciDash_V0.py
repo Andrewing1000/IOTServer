@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # Function to make SQL queries
 def make_query(query):
-    url = 'http://localhost:8080/tienda/run-sql-query/'
+    url = 'http://127.0.0.1:8080/tienda/run-sql-query/'
     data = {'query': query}
     try:
         response = requests.post(url, json=data)
