@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from core.models import User 
 
 class Articulo(models.Model):
     codigo = models.IntegerField()
@@ -64,3 +65,6 @@ class TangentAproximation(models.Model):
         blank=False,
         on_delete=models.CASCADE,
     )
+
+class IOTClient(User):
+    ip = models.CharField(max_length=255, blank=True, null=True)

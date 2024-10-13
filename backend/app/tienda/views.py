@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import views, generics, viewsets, exceptions
-from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation
+from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation, IOTClient
 from tienda.serializers import ArticuloSerializer
 
 
@@ -8,9 +8,9 @@ from django.db import connection
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import SineSeriesSerializer, CosineSeriesSerializer, TangentSeriesSerializer
+from .serializers import SineSeriesSerializer, CosineSeriesSerializer, TangentSeriesSerializer, IOTClientSerializer
 
-from core.permissions import IsLogged
+from rest_framework import permissions, authentication
 
 
 class ArticulosViewSet(viewsets.ModelViewSet):
@@ -18,14 +18,25 @@ class ArticulosViewSet(viewsets.ModelViewSet):
     queryset = Articulo.objects.all()
     serializer_class = ArticuloSerializer
 
+
+class CreateIOTClient(viewsets.ModelViewSet):
+    queryset = IOTClient.objects.all()
+    serializer_class = IOTClientSerializer
+    authentication_classes = []
+    permission_classes = []
+
+
 class SineSeriesViewSet(viewsets.ModelViewSet):
     queryset = SineAproximation.objects.all()
+    authentication_clases = [authentication.TokenAuthentication]
     serializer_class = SineSeriesSerializer
-    permission_classes = [IsLogged]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        return self.queryset.filter(user=user)
+
+        if(user.is_superuser): return SineAproximation.objects.all()
+        return SineAproximation.objects.filter(user=user)
     
     def perform_create(self, serializer):
         user = self.request.user
@@ -38,12 +49,14 @@ class SineSeriesViewSet(viewsets.ModelViewSet):
 
 class CosineSeriesViewSet(viewsets.ModelViewSet):
     queryset = CosineAproximation.objects.all()
+    authentication_clases = [authentication.TokenAuthentication]
     serializer_class = CosineSeriesSerializer
-    permission_classes = [IsLogged]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        return self.queryset.filter(user=user)
+        if(user.is_superuser): return SineAproximation.objects.all()
+        return CosineAproximation.objects.filter(user=user)
     
     def perform_create(self, serializer):
         user = self.request.user
@@ -56,12 +69,14 @@ class CosineSeriesViewSet(viewsets.ModelViewSet):
 
 class TangentSeriesViewSet(viewsets.ModelViewSet):
     queryset = TangentAproximation.objects.all()
+    authentication_clases = [authentication.TokenAuthentication]
     serializer_class = TangentSeriesSerializer
-    permission_classes = [IsLogged]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        return self.queryset.filter(user=user)
+        if(user.is_superuser): return SineAproximation.objects.all()
+        return TangentAproximation.objects.filter(user=user)
     
     def perform_create(self, serializer):
         user = self.request.user

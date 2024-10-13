@@ -13,6 +13,7 @@ router.register(r'articulo', views.ArticulosViewSet)
 router.register(r'sine', views.SineSeriesViewSet)
 router.register(r'cosine', views.CosineSeriesViewSet)
 router.register(r'tangent', views.TangentSeriesViewSet)
+router.register(r'user', views.CreateIOTClient)
 
 urlpatterns = [
     path('', include(router.urls), name = 'list'),

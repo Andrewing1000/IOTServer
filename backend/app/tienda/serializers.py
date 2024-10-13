@@ -1,5 +1,8 @@
 from rest_framework import serializers, exceptions
-from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation
+from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation, IOTClient
+from user.serializers import UserSerializer
+
+from django.contrib.auth import get_user_model
 import random
 
 
@@ -23,17 +26,54 @@ def fact(n):
     precomputed_fact += [0] * (n + 1 - len(precomputed_fact))
     return fact(n)
 
+
+
+class IOTClientSerializer(serializers.ModelSerializer):
+    """Serializer for the user object."""
+
+    class Meta:
+        model = IOTClient
+        fields = ['pk', 'email', 'password', 'name', 'is_active', 'ip']
+        extra_kwargs = {
+            'password': {'write_only': True,},
+            'ip':{'read_only': True},
+        }
+
+    def create(self, validated_data):
+        """Create and return a user with encrypted password"""
+        iotclient = IOTClient(**validated_data)
+        iotclient.email = validated_data.get("email")
+        iotclient.set_password(validated_data.get("password"))
+        #iotclient.name = validated_data.get("name")
+        iotclient.save()
+        return iotclient
+
+    def update(self, instance, validated_data):
+        """Update and return user."""
+        password = validated_data.pop('password', None)
+        user = super().update(instance, validated_data)
+
+        if password:
+            user.set_password(password)
+            user.save()
+
+        return user
+
+
+
 class SineSeriesSerializer(serializers.ModelSerializer):
     with_error = serializers.SerializerMethodField()
     m = serializers.IntegerField()
+    user = IOTClientSerializer(required=False)
     class Meta:
         model = SineAproximation
-        fields = ['n', 'term' ,'error', 'with_error', 'm']
+        fields = ['n', 'term' ,'error', 'with_error', 'm', 'user']
         extra_kwargs = {
             'term':{'read_only':True},
             'error':{'read_only':True},
             'with_error':{'read_only':True},
-            'm':{'write_only':True}
+            'm':{'write_only':True},
+            'user':{'read_only'},
         }
 
     def create(self, validated_data):
@@ -50,7 +90,7 @@ class SineSeriesSerializer(serializers.ModelSerializer):
                 user=validated_data.get('user'),
             )
             instances.append(instance)
-
+        SineAproximation.objects.all().delete()
         SineAproximation.objects.bulk_create(instances)
         return instances[-1]
             
@@ -83,14 +123,16 @@ class SineSeriesSerializer(serializers.ModelSerializer):
 class CosineSeriesSerializer(serializers.ModelSerializer):
     with_error = serializers.SerializerMethodField()
     m = serializers.IntegerField()
+    user = UserSerializer(required=False)
     class Meta:
         model = CosineAproximation
-        fields = ['n', 'term' ,'error', 'with_error', 'm']
+        fields = ['n', 'term' ,'error', 'with_error', 'm', 'user']
         extra_kwargs = {
             'term':{'read_only':True},
             'error':{'read_only':True},
             'with_error':{'read_only':True},
-            'm':{'write_only':True}
+            'm':{'write_only':True},
+            'user':{'read_only'},
         }
 
     def create(self, validated_data):
@@ -108,6 +150,8 @@ class CosineSeriesSerializer(serializers.ModelSerializer):
             )
             instances.append(instance)
 
+        
+        CosineAproximation.objects.all().delete()
         CosineAproximation.objects.bulk_create(instances)
         return instances[-1]
             
@@ -135,14 +179,16 @@ class CosineSeriesSerializer(serializers.ModelSerializer):
 class TangentSeriesSerializer(serializers.ModelSerializer):
     with_error = serializers.SerializerMethodField()
     m = serializers.IntegerField()
+    user = UserSerializer(required=False)
     class Meta:
         model = TangentAproximation
-        fields = ['n', 'term', 'error', 'with_error', 'm']
+        fields = ['n', 'term', 'error', 'with_error', 'm', 'user']
         extra_kwargs = {
             'term': {'read_only': True},
             'error': {'read_only': True},
             'with_error': {'read_only': True},
             'm': {'write_only': True},
+            'user': {'read_only': True}
         }
 
     def create(self, validated_data):
@@ -162,6 +208,8 @@ class TangentSeriesSerializer(serializers.ModelSerializer):
             )
             instances.append(instance)
 
+        
+        TangentAproximation.objects.all().delete()
         TangentAproximation.objects.bulk_create(instances)
         return instances[-1]
 

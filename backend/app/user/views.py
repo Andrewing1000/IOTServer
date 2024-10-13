@@ -1,7 +1,7 @@
 """
 Views for the user API.
 """
-from rest_framework import generics, views, permissions, exceptions
+from rest_framework import generics, views, permissions, exceptions, authentication
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -117,44 +117,15 @@ class ListUserLogsView(generics.ListAPIView):
         return super().get(request, *args, **kwargs)
     
 
-class CreateTokenView(generics.CreateAPIView): #(ObtainAuthToken):
+class CreateTokenView(ObtainAuthToken):
     """Create a new auth toker for user."""
-    #serializer_class = AuthTokenSerializer
     #throttle_classes = [LogInThrottle]
     serializer_class = AuthTokenSerializer
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
 
-
-    def get_user_sessions(self, user):
-    # Ensure the user instance is of the correct type
-        User = get_user_model()
-        if not isinstance(user, User):
-            raise ValueError("The 'user' parameter must be an instance of the User model.")
-
-        # Get all non-expired sessions
-        sessions = Session.objects.filter(login_time__gte=timezone.now())
-        user_sessions = []
-
-        for session in sessions:
-            data = session.get_decoded()
-            # Check if this session is associated with the user
-            if data.get('_auth_user_id') == str(user.id):
-                user_sessions.append(session)
-
-        return user_sessions
-
-    def get_user_last_session_key(self, user):
-        user_sessions = self.get_user_sessions(user)
-        if user_sessions:
-            # Assuming the last session is the one with the most recent expiration date
-            last_session = max(user_sessions, key=lambda s: s.login_time)
-            return last_session.session_key
-        return None
-
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
 
         user = serializer.validated_data.get('user')
         if not user:
@@ -162,32 +133,43 @@ class CreateTokenView(generics.CreateAPIView): #(ObtainAuthToken):
 
         if(isinstance(user, AnonymousUser)):
             return Response({'message'  : 'El usuario no está registrado'}, status= status.HTTP_404_NOT_FOUND)
-        
-        Session.login(request.user, request=request)
-        print(user.is_authenticated)
 
         response_serializer  = UserSerializer(instance = user)
         data = response_serializer.data
         
-        data['sessionid'] = self.get_user_last_session_key(user)
+        token, created = Token.objects.get_or_create(user=user)
+
+        if(hasattr(user, "iotclient")):
+            user.iotclient.ip = self.get_client_ip(request)
+            user.iotclient.save()
+            
+        data['token'] = token.key
         return Response(data = data, status=status.HTTP_200_OK)
 
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
 
 
 class LogoutView(views.APIView):
-    
-    permission_classes = [permissions.IsAuthenticated, IsLogged]
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
     def post(self, request, *args, **kwargs):
         if(isinstance(request.user, AnonymousUser)):
             return Response(status=status.HTTP_412_PRECONDITION_FAILED)
-        Session.logout(request.user, request=request)
+        #Session.logout(request.user, request=request)
         return Response(status=status.HTTP_202_ACCEPTED)
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     """Manage the authenticated user."""
+    authentication_classes = [authentication.TokenAuthentication]
     serializer_class = UserSerializer
-    permission_classes = [IsLogged]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         """Retrieve and return the authenticated user."""
