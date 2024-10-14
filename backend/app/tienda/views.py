@@ -87,7 +87,22 @@ class CosineSeriesViewSet(viewsets.ModelViewSet):
         return Response(response_serializer.data)
    
    
-
+class ActivityView(APIView):
+    def get(self, request, *args, **kwargs):
+        activity = []
+        clients = IOTClient.objects.all()
+        for client in clients:
+            if not client.ip: continue
+            sum = len(TangentAproximation.objects.filter(user=client))
+            sum += len(SineAproximation.objects.filter(user=client))
+            sum += len(CosineAproximation.objects.filter(user=client))
+            activity.append({
+                'ip': client.ip,
+                'actividad': sum,
+            })
+        
+        return Response(activity)
+    
 
 class TangentSeriesViewSet(viewsets.ModelViewSet):
     queryset = TangentAproximation.objects.all()

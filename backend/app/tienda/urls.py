@@ -18,6 +18,7 @@ router.register(r'user', views.CreateIOTClient)
 urlpatterns = [
     path('', include(router.urls), name = 'list'),
     path('run-sql-query/', views.RunSQLQueryView.as_view(), name='run-sql-query'),
+    path('activity/', views.ActivityView.as_view(), name='activity'),
     path('login/', views.login_view, name='login'),
     path('index/', views.index_view, name='index'),
     path('admin/', views.admin_view, name='admin')

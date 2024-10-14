@@ -85,7 +85,7 @@
 
     <div class="dashboard-container">
         <button class="logout-button" onclick="logout()">Cerrar Sesión</button>
-        <h1>Dashboard de Admin - Series de Taylor Trigonométricas</h1>
+        <h1>Dashboard de Admin - Series Trigonométricas</h1>
 
         <div class="input-container">
             <label for="filter-pk">Filtrar por PK de usuario:</label>
@@ -98,7 +98,7 @@
                 <option value="">Todos</option> <!-- Opción para no filtrar por IP -->
             </select>
 
-            <button onclick="aplicarFiltros()">Aplicar Filtros</button>
+            
         </div>
 
         <!-- Seno Section -->
@@ -117,6 +117,11 @@
         <div class="grafico">
             <h2>Tangente</h2>
             <div id="grafico_tangente" style="width:100%;height:300px;"></div>
+        </div>
+
+        <div class="grafico">
+            <h2>Actividad de Usuarios</h2>
+            <div id="grafico_actividad" style="width:100%;height:300px;"></div>
         </div>
 
         <div class="clear"></div>
@@ -181,8 +186,9 @@
                     filterPkSelect.appendChild(optionPk);
     
                     const optionIp = document.createElement('option');
-                    optionIp.value = usuario.ip;
-                    optionIp.textContent = `IP: ${usuario.ip}`;
+                    optionIp.value = usuario.ip? usuario.ip: '';
+                
+                    optionIp.textContent = usuario.ip? `IP: ${usuario.ip}`: 'IP: ""';
                     filterIpSelect.appendChild(optionIp);
                 });
     
@@ -196,11 +202,13 @@
                 sineDataFull = await fetchSeries('sine', token);
                 cosineDataFull = await fetchSeries('cosine', token);
                 tangentDataFull = await fetchSeries('tangent', token);
+                activityDataFull = await fetchSeries('activity', token);
     
                 // Generar gráficos sin filtros aplicados aún
                 generarGrafico('grafico_seno', sineDataFull, 'Serie Seno');
                 generarGrafico('grafico_coseno', cosineDataFull, 'Serie Coseno');
                 generarGrafico('grafico_tangente', tangentDataFull, 'Serie Tangente');
+                generarGraficoActividad('grafico_actividad', activityDataFull, 'Actividad de usuarios');
             } catch (error) {
                 console.error('Error al obtener las series:', error);
             }
@@ -220,6 +228,28 @@
             }
             return await response.json();
         }
+
+        function generarGraficoActividad(id, data, titulo){
+            const labels = data.map(item => item.ip);
+            const activity = data.map(item => item.actividad);
+
+            const layout = {
+                title: titulo,
+                xaxis: {title: 'IP'},
+                yaxis: {title: '#Registros'},
+                showlegend: true,
+            }
+
+            const trace1 = {
+                x: labels,
+                y: activity,
+                type:"bar",
+                name: "Actividad",
+            }
+
+            Plotly.react(id, [trace1], layout)
+        }
+
     
         function generarGrafico(id, data, titulo) {
             const nValues = data.map(item => item.n);

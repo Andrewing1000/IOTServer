@@ -39,6 +39,12 @@ class IOTClientSerializer(serializers.ModelSerializer):
             'ip':{'read_only': True},
         }
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        # Ensure IP is explicitly included even if null
+        ret['ip'] = instance.iotclient.ip if hasattr(instance, 'iotclient') else ''
+        return ret
+
     def create(self, validated_data):
         """Create and return a user with encrypted password"""
         iotclient = IOTClient(**validated_data)
