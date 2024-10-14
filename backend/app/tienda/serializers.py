@@ -3,7 +3,7 @@ from tienda.models import Articulo, SineAproximation, CosineAproximation, Tangen
 from user.serializers import UserSerializer
 
 from django.contrib.auth import get_user_model
-import random
+import random, math
 
 
 class ArticuloSerializer(serializers.ModelSerializer):
@@ -63,30 +63,33 @@ class IOTClientSerializer(serializers.ModelSerializer):
 
 class SineSeriesSerializer(serializers.ModelSerializer):
     with_error = serializers.SerializerMethodField()
-    m = serializers.IntegerField()
+    m = serializers.IntegerField(write_only=True)
     user = IOTClientSerializer(required=False)
     class Meta:
         model = SineAproximation
         fields = ['n', 'term' ,'error', 'with_error', 'm', 'user']
         extra_kwargs = {
+            'n':{'read_only': True},
             'term':{'read_only':True},
             'error':{'read_only':True},
             'with_error':{'read_only':True},
-            'm':{'write_only':True},
+            'm':{'write_only': True,},
             'user':{'read_only'},
         }
 
+
     def create(self, validated_data):
-        m = validated_data.get('m', None)
+        m = validated_data.pop('m', None)
         if not m: 
             raise exceptions.NotAcceptable('Ingrese el numero de términos')
 
         instances = []
+        d = 1
         for i in range(1, m+1):
             instance = SineAproximation(
                 n=i,
-                term=1.0/fact(2*i-1),
-                error=random.randrange(-100, 100)/100,
+                term=math.sin(i*d),
+                error=random.randrange(-50, 50)/100,
                 user=validated_data.get('user'),
             )
             instances.append(instance)
@@ -103,11 +106,14 @@ class SineSeriesSerializer(serializers.ModelSerializer):
         if not m0:
             m0=0
         instances = []
+        d = 1
         for i in range(m0+1, m0+m+1):
             instance=SineAproximation(
                 n=i,
-                term=1.0/fact(2*i-1),
-                error=random.randrange(-100, 100)/100
+                term=math.sin(i*d),
+                error=random.randrange(-50, 50)/100,
+                user=validated_data.get('user'),
+
             )
             instances.append(instance)
 
@@ -122,12 +128,13 @@ class SineSeriesSerializer(serializers.ModelSerializer):
 
 class CosineSeriesSerializer(serializers.ModelSerializer):
     with_error = serializers.SerializerMethodField()
-    m = serializers.IntegerField()
-    user = UserSerializer(required=False)
+    m = serializers.IntegerField(write_only=True)
+    user = IOTClientSerializer(required=False)
     class Meta:
         model = CosineAproximation
         fields = ['n', 'term' ,'error', 'with_error', 'm', 'user']
         extra_kwargs = {
+            'n':{'read_only': True},
             'term':{'read_only':True},
             'error':{'read_only':True},
             'with_error':{'read_only':True},
@@ -141,11 +148,12 @@ class CosineSeriesSerializer(serializers.ModelSerializer):
             raise exceptions.NotAcceptable('Ingrese el numero de términos')
 
         instances = []
+        d = 1
         for i in range(1, m+1):
             instance = CosineAproximation(
                 n=i,
-                term=1.0/fact(2*i-1),
-                error=random.randrange(-100, 100)/100,
+                term=math.cos(i*d),
+                error=random.randrange(-50, 50)/100,
                 user=validated_data.get('user'),
             )
             instances.append(instance)
@@ -162,11 +170,13 @@ class CosineSeriesSerializer(serializers.ModelSerializer):
         if not m0:
             m0=0
         instances = []
+        d = 1
         for i in range(m0+1, m0+m+1):
             instance=CosineAproximation(
                 n=i,
-                term=1.0/fact(2*i),
-                error=random.randrange(-100, 100)/100
+                term=math.cos(i*d),
+                error=random.randrange(-50, 50)/100,
+                user=validated_data.get('user'),
             )
             instances.append(instance)
 
@@ -178,12 +188,13 @@ class CosineSeriesSerializer(serializers.ModelSerializer):
     
 class TangentSeriesSerializer(serializers.ModelSerializer):
     with_error = serializers.SerializerMethodField()
-    m = serializers.IntegerField()
-    user = UserSerializer(required=False)
+    m = serializers.IntegerField(write_only=True)
+    user = IOTClientSerializer(required=False)
     class Meta:
         model = TangentAproximation
         fields = ['n', 'term', 'error', 'with_error', 'm', 'user']
         extra_kwargs = {
+            'n':{'read_only': True},
             'term': {'read_only': True},
             'error': {'read_only': True},
             'with_error': {'read_only': True},
@@ -197,13 +208,14 @@ class TangentSeriesSerializer(serializers.ModelSerializer):
         instances = []
         user = validated_data.get('user')  # Assume `user` comes from validated data
 
+        d = 0.05
         for i in range(1, m + 1):
             # Tangent Taylor series term calculation
             term = self.calculate_tangent_term(i)
             instance = TangentAproximation(
                 n=i,
-                term=term,
-                error=random.uniform(-1, 1),  # Using `uniform` to avoid hard range
+                term = math.tan(i*d),
+                error=random.uniform(-30, 30),  # Using `uniform` to avoid hard range
                 user=user,
             )
             instances.append(instance)
@@ -218,16 +230,19 @@ class TangentSeriesSerializer(serializers.ModelSerializer):
         m0 = TangentAproximation.objects.values_list('n', flat=True).last() or 0
 
         instances = []
+        d = 0.05
         for i in range(m0 + 1, m0 + m + 1):
             # Tangent Taylor series term calculation
             term = self.calculate_tangent_term(i)
             new_instance = TangentAproximation(
                 n=i,
-                term=term,
-                error=random.uniform(-1, 1),
+                term=math.tan(i*d),
+                error=random.uniform(-30, 30)/50,
+                user=validated_data.get('user'),
             )
             instances.append(new_instance)
 
+        
         TangentAproximation.objects.bulk_create(instances)
         return instances[-1] if instances else instance
 

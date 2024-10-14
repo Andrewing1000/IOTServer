@@ -28,63 +28,96 @@ class CreateIOTClient(viewsets.ModelViewSet):
 
 class SineSeriesViewSet(viewsets.ModelViewSet):
     queryset = SineAproximation.objects.all()
-    authentication_clases = [authentication.TokenAuthentication]
+    authentication_classes = [authentication.TokenAuthentication]
     serializer_class = SineSeriesSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-
-        if(user.is_superuser): return SineAproximation.objects.all()
+        
+        if user.is_staff: return SineAproximation.objects.all()
         return SineAproximation.objects.filter(user=user)
     
     def perform_create(self, serializer):
         user = self.request.user
         serializer.save(user=user)
 
-    def perform_update(self, serializer):
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
         user = self.request.user
-        serializer.save(user=user)
+        data['user'] = user
+        instance = serializer.update(None, data)
+        response_serializer = self.get_serializer(instance)
+        
+        return Response(response_serializer.data)
+   
 
 
 class CosineSeriesViewSet(viewsets.ModelViewSet):
     queryset = CosineAproximation.objects.all()
-    authentication_clases = [authentication.TokenAuthentication]
+    authentication_classes = [authentication.TokenAuthentication]
     serializer_class = CosineSeriesSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        if(user.is_superuser): return SineAproximation.objects.all()
+        if user.is_staff: return CosineAproximation.objects.all()
         return CosineAproximation.objects.filter(user=user)
     
     def perform_create(self, serializer):
         user = self.request.user
         serializer.save(user=user)
 
-    def perform_update(self, serializer):
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
         user = self.request.user
-        serializer.save(user=user)
+        data['user'] = user
+        instance = serializer.update(None, data)
+        response_serializer = self.get_serializer(instance)
+        
+        return Response(response_serializer.data)
+   
+   
 
 
 class TangentSeriesViewSet(viewsets.ModelViewSet):
     queryset = TangentAproximation.objects.all()
-    authentication_clases = [authentication.TokenAuthentication]
+    authentication_classes = [authentication.TokenAuthentication]
     serializer_class = TangentSeriesSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        if(user.is_superuser): return SineAproximation.objects.all()
+        if user.is_staff: return TangentAproximation.objects.all()
         return TangentAproximation.objects.filter(user=user)
     
     def perform_create(self, serializer):
         user = self.request.user
         serializer.save(user=user)
 
-    def perform_update(self, serializer):
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
         user = self.request.user
-        serializer.save(user=user)
+        data['user'] = user
+        instance = serializer.update(None, data)
+        response_serializer = self.get_serializer(instance)
+        
+        return Response(response_serializer.data)
+   
+   
 
 
 class RunSQLQueryView(APIView):

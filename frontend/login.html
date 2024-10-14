@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro y Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        input {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .link {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container" id="login-container">
+            <h2>Iniciar Sesión</h2>
+            <form onsubmit="loguearUsuario(event)">
+                <input type="email" id="login-email" placeholder="Correo electrónico" required>
+                <input type="password" id="login-password" placeholder="Contraseña" required>
+                <button type="submit">Iniciar Sesión</button>
+            </form>
+            <div class="link">
+                <p>¿No tienes una cuenta? <a href="#" onclick="toggleForms()">Regístrate aquí</a></p>
+            </div>
+        </div>
+
+        <div class="container" id="register-container" style="display: none;">
+            <h2>Registro de Usuario</h2>
+            <form onsubmit="registrarUsuario(event)">
+                <input type="text" id="register-name" placeholder="Nombre" required>
+                <input type="email" id="register-email" placeholder="Correo electrónico" required>
+                <input type="password" id="register-password" placeholder="Contraseña" required>
+                <button type="submit">Registrarse</button>
+            </form>
+            <div class="link">
+                <p>¿Ya tienes una cuenta? <a href="#" onclick="toggleForms()">Inicia sesión aquí</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Al cargar la página, revisamos si existe un token y si es válido
+        window.onload = async function() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const response = await fetch('http://localhost:8080/user/me/', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': 'Token ' + token,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+                    if (response.ok) {
+                        // Si el token es válido, redirigimos al index.html
+                        window.location.href = 'index.html';
+                    } else {
+                        // Si el token es inválido, lo eliminamos del localStorage
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('email');
+                        localStorage.removeItem('is_staff');
+                    }
+                } catch (error) {
+                    console.error('Error de red o servidor:', error);
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('email');
+                    localStorage.removeItem('is_staff');
+                }
+            }
+        };
+
+        // Función para registrar un usuario
+        async function registrarUsuario(event) {
+            event.preventDefault();
+            const name = document.getElementById("register-name").value;
+            const email = document.getElementById("register-email").value;
+            const password = document.getElementById("register-password").value;
+
+            try {
+                const response = await fetch('http://localhost:8080/tienda/user/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        password: password,
+                        is_active: true
+                    }),
+                });
+
+                if (response.ok) {
+                    alert('Usuario registrado exitosamente');
+                } else {
+                    alert('Error en el registro');
+                }
+            } catch (error) {
+                alert('Error de red: ' + error);
+            }
+        }
+
+        // Función para loguear un usuario
+        async function loguearUsuario(event) {
+            event.preventDefault();
+            const email = document.getElementById("login-email").value;
+            const password = document.getElementById("login-password").value;
+
+            try {
+                const response = await fetch('http://localhost:8080/user/token/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Guardamos los datos relevantes en localStorage
+                    localStorage.setItem('email', data.email);
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('is_staff', data.is_staff);  // Guardamos is_staff en localStorage
+
+                    // Redirigir según el rol del usuario
+                    if (data.is_staff) {
+                        window.location.href = 'admin.html';  // Redirigimos a admin si es staff
+                    } else {
+                        window.location.href = 'index.html';  // Redirigimos a cliente si no es staff
+                    }
+                } else {
+                    alert('Error en el login');
+                }
+            } catch (error) {
+                alert('Error de red: ' + error);
+            }
+        }
+
+        function toggleForms() {
+            const loginContainer = document.getElementById('login-container');
+            const registerContainer = document.getElementById('register-container');
+            if (loginContainer.style.display === "none") {
+                loginContainer.style.display = "block";
+                registerContainer.style.display = "none";
+            } else {
+                loginContainer.style.display = "none";
+                registerContainer.style.display = "block";
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -187,7 +187,7 @@ class UserManager(BaseUserManager):
                 'email' : 'admin@example.com',
                 'password' : 'admin',
         }
-        admin = cls.filter(email = data['email']).first()
+        admin = get_user_model().objects.filter(email = data['email']).first()
         if admin:
             print("Admin instance already created")
             return

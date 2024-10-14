@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Series de Taylor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        .grafico {
+            margin: 20px 0;
+        }
+
+        .logout-button {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .logout-button:hover {
+            background-color: #c82333;
+        }
+
+        .input-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .input-container input {
+            padding: 10px;
+            width: 80px;
+            margin-right: 10px;
+        }
+
+        .input-container button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .input-container button:hover {
+            background-color: #218838;
+        }
+
+        .clear {
+            clear: both;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <button class="logout-button" onclick="logout()">Cerrar Sesión</button>
+        <h1>Dashboard de Series de Taylor Trigonométricas</h1>
+
+        <!-- Seno Section -->
+        <div class="grafico">
+            <h2>Seno</h2>
+            <div id="grafico_seno" style="width:100%;height:300px;"></div>
+            <div class="input-container">
+                <input type="number" id="terminos_seno" placeholder="N. términos" min="1">
+                <button onclick="reiniciarSeno()">Reiniciar Seno</button>
+                <button onclick="anadirTerminosSeno()">Añadir Términos</button>
+            </div>
+        </div>
+
+        <!-- Coseno Section -->
+        <div class="grafico">
+            <h2>Coseno</h2>
+            <div id="grafico_coseno" style="width:100%;height:300px;"></div>
+            <div class="input-container">
+                <input type="number" id="terminos_coseno" placeholder="N. términos" min="1">
+                <button onclick="reiniciarCoseno()">Reiniciar Coseno</button>
+                <button onclick="anadirTerminosCoseno()">Añadir Términos</button>
+            </div>
+        </div>
+
+        <!-- Tangente Section -->
+        <div class="grafico">
+            <h2>Tangente</h2>
+            <div id="grafico_tangente" style="width:100%;height:300px;"></div>
+            <div class="input-container">
+                <input type="number" id="terminos_tangente" placeholder="N. términos" min="1">
+                <button onclick="reiniciarTangente()">Reiniciar Tangente</button>
+                <button onclick="anadirTerminosTangente()">Añadir Términos</button>
+            </div>
+        </div>
+
+        <div class="clear"></div>
+    </div>
+
+    <script>
+        // Verificación del token y redirección si no está autenticado
+        window.onload = async function() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Por favor, inicie sesión para acceder al dashboard');
+                window.location.href = 'login.html';
+                return;
+            }
+            obtenerSeries(); // Cargar gráficos al iniciar la página
+        };
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        async function obtenerSeries() {
+            const token = localStorage.getItem('token');
+
+            try {
+                const sineData = await fetchSeries('sine', token);
+                const cosineData = await fetchSeries('cosine', token);
+                const tangentData = await fetchSeries('tangent', token);
+
+                generarGrafico('grafico_seno', sineData, 'Serie Seno');
+                generarGrafico('grafico_coseno', cosineData, 'Serie Coseno');
+                generarGrafico('grafico_tangente', tangentData, 'Serie Tangente');
+            } catch (error) {
+                console.error('Error al obtener las series:', error);
+            }
+        }
+
+        async function fetchSeries(type, token) {
+            const response = await fetch(`http://localhost:8080/tienda/${type}/`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Token ' + token,
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error al obtener la serie ${type}`);
+            }
+            return await response.json();
+        }
+
+        function generarGrafico(id, data, titulo) {
+            const nValues = data.map(item => item.n);
+            const serieValues = data.map(item => item.term);
+            const errorValues = data.map(item => item.error);
+            const withErrorValues = data.map(item => item.with_error);
+
+            const layout = {
+                title: titulo,
+                xaxis: { title: 'N' },
+                yaxis: { title: 'Valor' },
+                showlegend: true
+            };
+
+            const trace1 = {
+                x: nValues,
+                y: serieValues,
+                mode: 'lines+markers',
+                name: 'Serie'
+            };
+
+            const trace2 = {
+                x: nValues,
+                y: errorValues,
+                mode: 'lines+markers',
+                name: 'Error'
+            };
+
+            const trace3 = {
+                x: nValues,
+                y: withErrorValues,
+                mode: 'lines+markers',
+                name: 'Serie con Error'
+            };
+
+            Plotly.react(id, [trace1, trace2, trace3], layout);
+        }
+
+        // Reiniciar y añadir términos para el seno
+        async function reiniciarSeno() {
+            const m = document.getElementById('terminos_seno').value;
+            if (!m) {
+                alert('Por favor, introduce el número de términos.');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            await fetch('http://localhost:8080/tienda/sine/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Token ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ m: parseInt(m) })
+            });
+
+            obtenerSeries(); // Refrescar los gráficos
+        }
+
+        async function anadirTerminosSeno() {
+            const m = document.getElementById('terminos_seno').value;
+            if (!m) {
+                alert('Por favor, introduce el número de términos.');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            await fetch('http://localhost:8080/tienda/sine/1/', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Token ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ m: parseInt(m) })
+            });
+
+            obtenerSeries(); // Refrescar los gráficos
+        }
+
+        // Reiniciar y añadir términos para el coseno
+        async function reiniciarCoseno() {
+            const m = document.getElementById('terminos_coseno').value;
+            if (!m) {
+                alert('Por favor, introduce el número de términos.');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            await fetch('http://localhost:8080/tienda/cosine/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Token ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ m: parseInt(m) })
+            });
+
+            obtenerSeries(); // Refrescar los gráficos
+        }
+
+        async function anadirTerminosCoseno() {
+            const m = document.getElementById('terminos_coseno').value;
+            if (!m) {
+                alert('Por favor, introduce el número de términos.');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            await fetch('http://localhost:8080/tienda/cosine/1/', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Token ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ m: parseInt(m) })
+            });
+
+            obtenerSeries(); // Refrescar los gráficos
+        }
+
+        // Reiniciar y añadir términos para la tangente
+        async function reiniciarTangente() {
+            const m = document.getElementById('terminos_tangente').value;
+            if (!m) {
+                alert('Por favor, introduce el número de términos.');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            await fetch('http://localhost:8080/tienda/tangent/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Token ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ m: parseInt(m) })
+            });
+
+            obtenerSeries(); // Refrescar los gráficos
+        }
+
+        async function anadirTerminosTangente() {
+            const m = document.getElementById('terminos_tangente').value;
+            if (!m) {
+                alert('Por favor, introduce el número de términos.');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            await fetch('http://localhost:8080/tienda/tangent/1/', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Token ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ m: parseInt(m) })
+            });
+
+            obtenerSeries(); // Refrescar los gráficos
+        }
+    </script>
+
+</body>
+</html>
