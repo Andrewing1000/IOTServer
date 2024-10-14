@@ -146,4 +146,14 @@ class RunSQLQueryView(APIView):
         
 
 
+def login_view(request):
+    base_url = f'{request.scheme}://{request.get_host()}/'
+    return render(request, 'tienda/login.html', {'base_url': base_url})
 
+def admin_view(request):
+    base_url = f'{request.scheme}://{request.get_host()}/'
+    return render(request, 'tienda/admin.html', {'base_url': base_url})
+
+def index_view(request):
+    base_url = f'{request.scheme}://{request.get_host()}/'
+    return render(request, 'tienda/index.html', {'base_url': base_url})

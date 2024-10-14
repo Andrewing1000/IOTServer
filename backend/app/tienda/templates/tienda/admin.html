@@ -123,71 +123,81 @@
     </div>
 
     <script>
-        let sineDataFull = [];  // Para almacenar todos los datos del seno
-        let cosineDataFull = [];  // Para almacenar todos los datos del coseno
-        let tangentDataFull = [];  // Para almacenar todos los datos del tangente
-        let usuarios = [];
 
-        // Verificación del token y redirección si no está autenticado
+        const BASE_URL = "{{ base_url }}"
+
+        let sineDataFull = [];  
+        let cosineDataFull = [];  
+        let tangentDataFull = [];  
+        let usuarios = [];
+        let currentPk = ''; 
+        let currentIp = ''; 
+    
         window.onload = async function() {
             const token = localStorage.getItem('token');
             if (!token) {
                 alert('Por favor, inicie sesión para acceder al dashboard');
-                window.location.href = 'login.html';
+                window.location.href = `${BASE_URL}tienda/login/`;
                 return;
             }
-            await obtenerUsuarios(token); // Llenar selectores con PKs y IPs
-            await obtenerSeries(token); // Cargar gráficos al iniciar la página
+            await obtenerUsuarios(token);
+            await obtenerSeries(token); 
+    
+            setInterval(async function() {
+                await obtenerSeries(token);
+                aplicarFiltros();
+            }, 2000);
         };
-
+    
         function logout() {
             localStorage.clear();
-            window.location.href = 'login.html';
+            window.location.href = `${BASE_URL}tienda/login/`;
         }
-
+    
         async function obtenerUsuarios(token) {
             try {
-                const response = await fetch('http://localhost:8080/tienda/user/', {
+                const response = await fetch(`${BASE_URL}tienda/user/`, {
                     method: 'GET',
                     headers: {
                         'Authorization': 'Token ' + token,
                         'Content-Type': 'application/json',
                     }
                 });
-
+    
                 if (!response.ok) {
                     throw new Error('Error al obtener los usuarios.');
                 }
-
+    
                 usuarios = await response.json();
-
+    
                 // Llenar selectores de PK e IP
                 const filterPkSelect = document.getElementById('filter-pk');
                 const filterIpSelect = document.getElementById('filter-ip');
-
+    
                 usuarios.forEach(usuario => {
                     const optionPk = document.createElement('option');
                     optionPk.value = usuario.pk;
                     optionPk.textContent = `PK: ${usuario.pk} - ${usuario.email}`;
                     filterPkSelect.appendChild(optionPk);
-
+    
                     const optionIp = document.createElement('option');
                     optionIp.value = usuario.ip;
                     optionIp.textContent = `IP: ${usuario.ip}`;
                     filterIpSelect.appendChild(optionIp);
                 });
-
+    
             } catch (error) {
                 console.error('Error al obtener usuarios:', error);
             }
         }
-
+    
         async function obtenerSeries(token) {
             try {
                 sineDataFull = await fetchSeries('sine', token);
                 cosineDataFull = await fetchSeries('cosine', token);
                 tangentDataFull = await fetchSeries('tangent', token);
-
+    
+                // Generar gráficos sin filtros aplicados aún
                 generarGrafico('grafico_seno', sineDataFull, 'Serie Seno');
                 generarGrafico('grafico_coseno', cosineDataFull, 'Serie Coseno');
                 generarGrafico('grafico_tangente', tangentDataFull, 'Serie Tangente');
@@ -195,65 +205,63 @@
                 console.error('Error al obtener las series:', error);
             }
         }
-
+    
         async function fetchSeries(type, token) {
-            const response = await fetch(`http://localhost:8080/tienda/${type}/`, {
+            const response = await fetch(`${BASE_URL}tienda/${type}/`, {
                 method: 'GET',
                 headers: {
                     'Authorization': 'Token ' + token,
                     'Content-Type': 'application/json',
                 }
             });
-
+    
             if (!response.ok) {
                 throw new Error(`Error al obtener la serie ${type}`);
             }
             return await response.json();
         }
-
+    
         function generarGrafico(id, data, titulo) {
             const nValues = data.map(item => item.n);
             const serieValues = data.map(item => item.term);
             const errorValues = data.map(item => item.error);
             const withErrorValues = data.map(item => item.with_error);
-
+    
             const layout = {
                 title: titulo,
                 xaxis: { title: 'N' },
                 yaxis: { title: 'Valor' },
                 showlegend: true
             };
-
+    
             const trace1 = {
                 x: nValues,
                 y: serieValues,
                 mode: 'lines+markers',
                 name: 'Serie'
             };
-
+    
             const trace2 = {
                 x: nValues,
                 y: errorValues,
                 mode: 'lines+markers',
                 name: 'Error'
             };
-
+    
             const trace3 = {
                 x: nValues,
                 y: withErrorValues,
                 mode: 'lines+markers',
                 name: 'Serie con Error'
             };
-
+    
             Plotly.react(id, [trace1, trace2, trace3], layout);
         }
-
-        // Filtrar los datos localmente por PK e IP
+    
         function aplicarFiltros() {
-            const pk = document.getElementById('filter-pk').value;
-            const ip = document.getElementById('filter-ip').value;
-
-            // Filtrar por PK
+            const pk = currentPk;  
+            const ip = currentIp;  
+    
             const sineDataFiltered = sineDataFull.filter(item => 
                 (!pk || item.user.pk == pk) && (!ip || item.user.ip == ip)
             );
@@ -263,13 +271,22 @@
             const tangentDataFiltered = tangentDataFull.filter(item => 
                 (!pk || item.user.pk == pk) && (!ip || item.user.ip == ip)
             );
-
-            // Actualizar los gráficos con los datos filtrados
+    
             generarGrafico('grafico_seno', sineDataFiltered, 'Serie Seno');
             generarGrafico('grafico_coseno', cosineDataFiltered, 'Serie Coseno');
             generarGrafico('grafico_tangente', tangentDataFiltered, 'Serie Tangente');
         }
+    
+        document.getElementById('filter-pk').addEventListener('change', function() {
+            currentPk = this.value; 
+            aplicarFiltros();
+        });
+    
+        document.getElementById('filter-ip').addEventListener('change', function() {
+            currentIp = this.value; 
+            aplicarFiltros();  
+        });
     </script>
-
+    
 </body>
 </html>

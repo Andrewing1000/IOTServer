@@ -124,12 +124,15 @@
     </div>
 
     <script>
-        // Verificación del token y redirección si no está autenticado
+        
+        const BASE_URL = "{{ base_url }}"
+        
+        
         window.onload = async function() {
             const token = localStorage.getItem('token');
             if (!token) {
                 alert('Por favor, inicie sesión para acceder al dashboard');
-                window.location.href = 'login.html';
+                window.location.href = `${BASE_URL}tienda/login/`;
                 return;
             }
             obtenerSeries(); // Cargar gráficos al iniciar la página
@@ -137,7 +140,7 @@
 
         function logout() {
             localStorage.clear();
-            window.location.href = 'login.html';
+            window.location.href = `${BASE_URL}tienda/login/`;
         }
 
         async function obtenerSeries() {
@@ -157,7 +160,7 @@
         }
 
         async function fetchSeries(type, token) {
-            const response = await fetch(`http://localhost:8080/tienda/${type}/`, {
+            const response = await fetch(`${BASE_URL}tienda/${type}/`, {
                 method: 'GET',
                 headers: {
                     'Authorization': 'Token ' + token,
@@ -217,7 +220,7 @@
             }
 
             const token = localStorage.getItem('token');
-            await fetch('http://localhost:8080/tienda/sine/', {
+            await fetch(`${BASE_URL}tienda/sine/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Token ' + token,
@@ -237,7 +240,7 @@
             }
 
             const token = localStorage.getItem('token');
-            await fetch('http://localhost:8080/tienda/sine/1/', {
+            await fetch(`${BASE_URL}tienda/sine/1/`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': 'Token ' + token,
@@ -258,7 +261,7 @@
             }
 
             const token = localStorage.getItem('token');
-            await fetch('http://localhost:8080/tienda/cosine/', {
+            await fetch(`${BASE_URL}tienda/cosine/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Token ' + token,
@@ -278,7 +281,7 @@
             }
 
             const token = localStorage.getItem('token');
-            await fetch('http://localhost:8080/tienda/cosine/1/', {
+            await fetch(`${BASE_URL}tienda/cosine/1/`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': 'Token ' + token,
@@ -299,7 +302,7 @@
             }
 
             const token = localStorage.getItem('token');
-            await fetch('http://localhost:8080/tienda/tangent/', {
+            await fetch(`${BASE_URL}tienda/tangent/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Token ' + token,
@@ -319,7 +322,7 @@
             }
 
             const token = localStorage.getItem('token');
-            await fetch('http://localhost:8080/tienda/tangent/1/', {
+            await fetch(`${BASE_URL}tienda/tangent/1/`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': 'Token ' + token,

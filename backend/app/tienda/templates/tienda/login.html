@@ -88,12 +88,14 @@
     </div>
 
     <script>
-        // Al cargar la página, revisamos si existe un token y si es válido
+        
+        const BASE_URL = "{{ base_url }}";
+        
         window.onload = async function() {
             const token = localStorage.getItem('token');
             if (token) {
                 try {
-                    const response = await fetch('http://localhost:8080/user/me/', {
+                    const response = await fetch(`${BASE_URL}user/me/`, {
                         method: 'GET',
                         headers: {
                             'Authorization': 'Token ' + token,
@@ -103,7 +105,7 @@
 
                     if (response.ok) {
                         // Si el token es válido, redirigimos al index.html
-                        window.location.href = 'index.html';
+                        window.location.href = `${BASE_URL}tienda/index/`;
                     } else {
                         // Si el token es inválido, lo eliminamos del localStorage
                         localStorage.removeItem('token');
@@ -127,7 +129,7 @@
             const password = document.getElementById("register-password").value;
 
             try {
-                const response = await fetch('http://localhost:8080/tienda/user/', {
+                const response = await fetch(`${BASE_URL}tienda/user/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -157,7 +159,7 @@
             const password = document.getElementById("login-password").value;
 
             try {
-                const response = await fetch('http://localhost:8080/user/token/', {
+                const response = await fetch(`${BASE_URL}user/token/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -177,9 +179,9 @@
 
                     // Redirigir según el rol del usuario
                     if (data.is_staff) {
-                        window.location.href = 'admin.html';  // Redirigimos a admin si es staff
+                        window.location.href = `${BASE_URL}tienda/admin/`;  // Redirigimos a admin si es staff
                     } else {
-                        window.location.href = 'index.html';  // Redirigimos a cliente si no es staff
+                        window.location.href = `${BASE_URL}tienda/index/`;  // Redirigimos a cliente si no es staff
                     }
                 } else {
                     alert('Error en el login');
