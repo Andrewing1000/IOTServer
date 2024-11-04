@@ -30,11 +30,14 @@ class CreateIOTClient(viewsets.ModelViewSet):
 class FibonacciInterface(views.APIView):
 
     def get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
-        else:
-            ip = request.META.get('REMOTE_ADDR')
+        # x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        # if x_forwarded_for:
+        #     ip = x_forwarded_for.split(',')[0].strip()
+        # else:
+        #ip = request.META.get('REMOTE_ADDR')
+        print(request.META)
+        #ip = request.META.get('HTTP_X_REAL_IP', request.META.get('REMOTE_ADDR'))
+        ip = request.META.get('HTTP_CEBOLLIN', None)
         return ip
 
 
@@ -51,7 +54,7 @@ class FibonacciInterface(views.APIView):
             a = terms[-1]
             b = terms[-2]
             new_value = a.fibonacci+b.fibonacci
-            new_error = randrange(-50, 50)/100
+            new_error = randrange(-50*(a.n+1)**2, 50*(a.n+1)**2)/100
             new_term = Fibonacci.objects.create(n=a.n+1, fibonacci=new_value, ip=ip, error=new_error)
         return Response(FibonacciSerializer(new_term).data)
     
@@ -77,6 +80,9 @@ class FibonacciViewSet(viewsets.ModelViewSet):
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+
+    def get_queryset(self):
+        return Fibonacci.objects.all().order_by('fibonacci')
 
     def perform_create(self, serializer):
         request = self.request
@@ -152,14 +158,12 @@ class CosineSeriesViewSet(viewsets.ModelViewSet):
 class ActivityView(APIView):
     def get(self, request, *args, **kwargs):
         activity = []
-        clients = IOTClient.objects.all()
-        for client in clients:
-            if not client.ip: continue
-            sum = len(TangentAproximation.objects.filter(user=client))
-            sum += len(SineAproximation.objects.filter(user=client))
-            sum += len(CosineAproximation.objects.filter(user=client))
+        ips = Fibonacci.objects.values_list('ip', flat=True).distinct()
+        for ip in ips:
+            if not ip: continue
+            sum = len(Fibonacci.objects.filter(ip=ip))
             activity.append({
-                'ip': client.ip,
+                'ip': ip,
                 'actividad': sum,
             })
         

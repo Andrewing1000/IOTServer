@@ -122,10 +122,10 @@
         </div> -->
 
         <!-- Actividad de Usuarios Section -->
-        <!-- <div class="grafico">
+        <div class="grafico">
             <h2>Actividad de Usuarios</h2>
             <div id="grafico_actividad" style="width:100%;height:300px;"></div>
-        </div> -->
+        </div>
 
         <!-- Fibonacii Section -->
         <div class="fibonacii">
@@ -223,9 +223,9 @@
                 activityDataFull = await fetchSeries('activity', token);
 
                 // Generar gráficos sin filtros aplicados aún
-                generarGrafico('grafico_seno', sineDataFull, 'Serie Seno');
-                generarGrafico('grafico_coseno', cosineDataFull, 'Serie Coseno');
-                generarGrafico('grafico_tangente', tangentDataFull, 'Serie Tangente');
+                //generarGrafico('grafico_seno', sineDataFull, 'Serie Seno');
+                //generarGrafico('grafico_coseno', cosineDataFull, 'Serie Coseno');
+                //generarGrafico('grafico_tangente', tangentDataFull, 'Serie Tangente');
                 generarGraficoActividad('grafico_actividad', activityDataFull, 'Actividad de usuarios');
             } catch (error) {
                 console.error('Error al obtener las series:', error);

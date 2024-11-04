@@ -62,7 +62,7 @@ class FibonacciSerializer(serializers.ModelSerializer):
                 n=i0+i,
                 fibonacci=a,
                 ip=ip,
-                error = random.randrange(-50, 50)/100
+                error = random.randrange(-50*(i0+i)**2, 50*(i0+i)**2)/100
             )
         return Fibonacci.objects.all().last()
 
