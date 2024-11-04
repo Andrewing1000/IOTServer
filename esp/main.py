@@ -1,4 +1,4 @@
-﻿from machine import Pin, PWM, ADC
+from machine import Pin, PWM, ADC
 import network
 import socket
 import time
@@ -79,6 +79,7 @@ async def create_request():
     request += f"Host: {addr[0]}\r\n"
     request += "Content-Type: application/json\r\n"
     request += "Content-Length: 0\r\n"
+    request += f"CEBOLLIN: {wifi.ifconfig()[0]}\r\n"
     request += "Connection: close\r\n\r\n"
         
     success = False
@@ -137,7 +138,8 @@ async def delete_request():
     path = "/tienda/iotinterface/"
     request = f"DELETE {path} HTTP/1.1\r\n"
     request += f"Host: {addr[0]}\r\n"
-    request += "Connection: close\r\n\r\n"
+    request += "Connection: close\r\n"
+    request += f"CEBOLLIN: {wifi.ifconfig()[0]} \r\n\r\n"
     
     success = False
     while abs(time.time()-t0)<timeout:
