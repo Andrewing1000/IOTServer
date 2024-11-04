@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import views, generics, viewsets, exceptions
-from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation, IOTClient
+from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation, IOTClient, Fibonacci
 from tienda.serializers import ArticuloSerializer
 
 
@@ -8,10 +8,11 @@ from django.db import connection
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import SineSeriesSerializer, CosineSeriesSerializer, TangentSeriesSerializer, IOTClientSerializer
+from .serializers import SineSeriesSerializer, CosineSeriesSerializer, TangentSeriesSerializer, IOTClientSerializer, FibonacciSerializer
 
-from rest_framework import permissions, authentication
+from rest_framework import permissions, authentication, status
 
+from random import randrange
 
 class ArticulosViewSet(viewsets.ModelViewSet):
 # Create your views here.
@@ -25,6 +26,67 @@ class CreateIOTClient(viewsets.ModelViewSet):
     authentication_classes = []
     permission_classes = []
 
+
+class FibonacciInterface(views.APIView):
+
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+    def post(self, request, *args, **kwargs):
+        terms = list(Fibonacci.objects.all().order_by('n'))
+        new_term = None
+        ip = self.get_client_ip(request)
+
+        if(len(terms)==0):
+            new_term = Fibonacci.objects.create(n=1, fibonacci=1, ip=ip, error=0)
+        elif(len(terms)==1):
+            new_term = Fibonacci.objects.create(n=2, fibonacci=1, ip=ip, error=0)
+        else:
+            a = terms[-1]
+            b = terms[-2]
+            new_value = a.fibonacci+b.fibonacci
+            new_error = randrange(-50, 50)/100
+            new_term = Fibonacci.objects.create(n=a.n+1, fibonacci=new_value, ip=ip, error=new_error)
+        return Response(FibonacciSerializer(new_term).data)
+    
+    def delete(self, request, *args, **kwargs):
+        terms=Fibonacci.objects.all().order_by('n')
+        last = terms.last()
+        if not last: 
+            return Response({'error': 'La tabla ya esta vacía'}, status=status.HTTP_404_NOT_FOUND)
+        last.delete()
+        return Response(status=status.HTTP_200_OK)
+    
+
+class FibonacciViewSet(viewsets.ModelViewSet):
+    queryset = Fibonacci.objects.all()
+    authentication_classes = [authentication.TokenAuthentication]
+    serializer_class = FibonacciSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+    def perform_create(self, serializer):
+        request = self.request
+        serializer.save(ip=self.get_client_ip(request))
+        return super().perform_create(serializer)
+    
+    def destroy(self, request, *args, **kwars):
+        Fibonacci.objects.all().delete()
+        return Response(status=status.HTTP_200_OK)
+    
 
 class SineSeriesViewSet(viewsets.ModelViewSet):
     queryset = SineAproximation.objects.all()

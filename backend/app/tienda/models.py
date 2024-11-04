@@ -8,9 +8,25 @@ class Articulo(models.Model):
     precio = models.FloatField()
 
 class Fibonacci(models.Model):
-    fibonaccic = models.FloatField()
-    conruido = models.FloatField()
-    error = models.FloatField()
+    n = models.IntegerField(
+        null=False,
+        blank=False,
+        default=1,
+        unique=True,
+    )
+    fibonacci = models.FloatField(
+        null=False,
+        blank=False,
+    )
+    error = models.FloatField(
+        null=False,
+        blank=False,
+    )
+    ip = models.CharField(
+        max_length=30,
+        null=True, 
+        blank=True,
+    )
 
 class SineAproximation(models.Model):
     n = models.IntegerField(

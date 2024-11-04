@@ -1,5 +1,5 @@
 from rest_framework import serializers, exceptions
-from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation, IOTClient
+from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation, IOTClient, Fibonacci
 from user.serializers import UserSerializer
 
 from django.contrib.auth import get_user_model
@@ -26,6 +26,45 @@ def fact(n):
     precomputed_fact += [0] * (n + 1 - len(precomputed_fact))
     return fact(n)
 
+
+class FibonacciSerializer(serializers.ModelSerializer):
+    m = serializers.IntegerField(write_only=True)
+    with_error = serializers.SerializerMethodField()
+    class Meta:
+        model = Fibonacci
+        fields = ['n', 'fibonacci', 'error', 'ip', 'with_error', 'm']
+        extra_kwargs = {'n': {'read_only':True},
+                        'fibonacci' : {'read_only':True},
+                        'ip': {'read_only':True}, 
+                        'error': {'read_only':True}
+                        }
+    
+    def get_with_error(self, object):
+        return object.fibonacci + object.error
+
+    def create(self, validated_data):        
+        m = validated_data.pop('m', None)
+        ip = validated_data.pop('ip', None)
+        terms = list(Fibonacci.objects.order_by('n'))        
+        i0 = 0
+
+        a, b = 1, 0
+        if len(terms):
+            i0 = terms[-1].n
+            b=terms[-1].fibonacci
+        if len(terms)>1:
+            a=terms[-2].fibonacci
+        a, b= b, a+b
+
+        for i in range(1, m+1):
+            a, b= b, a+b
+            Fibonacci.objects.create(
+                n=i0+i,
+                fibonacci=a,
+                ip=ip,
+                error = random.randrange(-50, 50)/100
+            )
+        return Fibonacci.objects.all().last()
 
 
 class IOTClientSerializer(serializers.ModelSerializer):
