@@ -34,7 +34,7 @@
             color: #333;
         }
 
-        .grafico {
+        .grafico, .fibonacii {
             margin: 20px 0;
         }
 
@@ -57,13 +57,13 @@
             text-align: center;
         }
 
-        .input-container select {
+        .input-container select, .fibonacci-input {
             padding: 10px;
             width: 150px;
             margin-right: 10px;
         }
 
-        .input-container button {
+        .input-container button, .fibonacci-button {
             padding: 10px 20px;
             background-color: #28a745;
             color: white;
@@ -72,12 +72,16 @@
             cursor: pointer;
         }
 
-        .input-container button:hover {
+        .input-container button:hover, .fibonacci-button:hover {
             background-color: #218838;
         }
 
-        .clear {
-            clear: both;
+        .fibonacci-button.delete {
+            background-color: #dc3545;
+        }
+
+        .fibonacci-button.delete:hover {
+            background-color: #c82333;
         }
     </style>
 </head>
@@ -97,34 +101,44 @@
             <select id="filter-ip">
                 <option value="">Todos</option> <!-- Opción para no filtrar por IP -->
             </select>
-
-            
         </div>
 
         <!-- Seno Section -->
-        <div class="grafico">
+        <!-- <div class="grafico">
             <h2>Seno</h2>
             <div id="grafico_seno" style="width:100%;height:300px;"></div>
-        </div>
+        </div> -->
 
         <!-- Coseno Section -->
-        <div class="grafico">
+        <!-- <div class="grafico">
             <h2>Coseno</h2>
             <div id="grafico_coseno" style="width:100%;height:300px;"></div>
-        </div>
+        </div> -->
 
         <!-- Tangente Section -->
-        <div class="grafico">
+        <!-- <div class="grafico">
             <h2>Tangente</h2>
             <div id="grafico_tangente" style="width:100%;height:300px;"></div>
-        </div>
+        </div> -->
 
-        <div class="grafico">
+        <!-- Actividad de Usuarios Section -->
+        <!-- <div class="grafico">
             <h2>Actividad de Usuarios</h2>
             <div id="grafico_actividad" style="width:100%;height:300px;"></div>
+        </div> -->
+
+        <!-- Fibonacii Section -->
+        <div class="fibonacii">
+            <h2>Fibonacii</h2>
+            <div class="input-container">
+                <label for="fibonacci-m">Número de términos (m):</label>
+                <input type="number" id="fibonacci-m" class="fibonacci-input" min="1" value="5">
+                <button class="fibonacci-button" onclick="addFibonacci()">Añadir Términos</button>
+                <button class="fibonacci-button delete" onclick="deleteFibonacci()">Eliminar Todos</button>
+            </div>
+            <div id="grafico_fibonacii" style="width:100%;height:300px;"></div>
         </div>
 
-        <div class="clear"></div>
     </div>
 
     <script>
@@ -134,10 +148,12 @@
         let sineDataFull = [];  
         let cosineDataFull = [];  
         let tangentDataFull = [];  
+        let activityDataFull = [];
+        let fibonacciDataFull = [];
         let usuarios = [];
         let currentPk = ''; 
         let currentIp = ''; 
-    
+
         window.onload = async function() {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -147,18 +163,20 @@
             }
             await obtenerUsuarios(token);
             await obtenerSeries(token); 
-    
+            await obtenerFibonacii(token);
+
             setInterval(async function() {
                 await obtenerSeries(token);
+                await obtenerFibonacii(token);
                 aplicarFiltros();
-            }, 2000);
+            }, 500);
         };
-    
+
         function logout() {
             localStorage.clear();
             window.location.href = `${BASE_URL}tienda/login/`;
         }
-    
+
         async function obtenerUsuarios(token) {
             try {
                 const response = await fetch(`${BASE_URL}tienda/user/`, {
@@ -168,42 +186,42 @@
                         'Content-Type': 'application/json',
                     }
                 });
-    
+
                 if (!response.ok) {
                     throw new Error('Error al obtener los usuarios.');
                 }
-    
+
                 usuarios = await response.json();
-    
+
                 // Llenar selectores de PK e IP
                 const filterPkSelect = document.getElementById('filter-pk');
                 const filterIpSelect = document.getElementById('filter-ip');
-    
+
                 usuarios.forEach(usuario => {
                     const optionPk = document.createElement('option');
                     optionPk.value = usuario.pk;
                     optionPk.textContent = `PK: ${usuario.pk} - ${usuario.email}`;
                     filterPkSelect.appendChild(optionPk);
-    
+
                     const optionIp = document.createElement('option');
-                    optionIp.value = usuario.ip? usuario.ip: '';
+                    optionIp.value = usuario.ip ? usuario.ip : '';
                 
-                    optionIp.textContent = usuario.ip? `IP: ${usuario.ip}`: 'IP: ""';
+                    optionIp.textContent = usuario.ip ? `IP: ${usuario.ip}` : 'IP: ""';
                     filterIpSelect.appendChild(optionIp);
                 });
-    
+
             } catch (error) {
                 console.error('Error al obtener usuarios:', error);
             }
         }
-    
+
         async function obtenerSeries(token) {
             try {
                 sineDataFull = await fetchSeries('sine', token);
                 cosineDataFull = await fetchSeries('cosine', token);
                 tangentDataFull = await fetchSeries('tangent', token);
                 activityDataFull = await fetchSeries('activity', token);
-    
+
                 // Generar gráficos sin filtros aplicados aún
                 generarGrafico('grafico_seno', sineDataFull, 'Serie Seno');
                 generarGrafico('grafico_coseno', cosineDataFull, 'Serie Coseno');
@@ -213,7 +231,7 @@
                 console.error('Error al obtener las series:', error);
             }
         }
-    
+
         async function fetchSeries(type, token) {
             const response = await fetch(`${BASE_URL}tienda/${type}/`, {
                 method: 'GET',
@@ -222,11 +240,92 @@
                     'Content-Type': 'application/json',
                 }
             });
-    
+
             if (!response.ok) {
                 throw new Error(`Error al obtener la serie ${type}`);
             }
             return await response.json();
+        }
+
+        async function obtenerFibonacii(token) {
+            try {
+                fibonacciDataFull = await fetchFibonacii(token);
+                generarGraficoFibonacii(fibonacciDataFull);
+            } catch (error) {
+                console.error('Error al obtener Fibonacii:', error);
+            }
+        }
+
+        async function fetchFibonacii(token) {
+            const response = await fetch(`${BASE_URL}tienda/fibonacci/`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Token ' + token,
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al obtener Fibonacii.');
+            }
+            return await response.json();
+        }
+
+        async function addFibonacci() {
+            const token = localStorage.getItem('token');
+            const m = parseInt(document.getElementById('fibonacci-m').value);
+
+            if (isNaN(m) || m < 1) {
+                alert('Por favor, ingrese un número válido de términos.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}tienda/fibonacci/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Token ' + token,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 'm': m })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al añadir términos de Fibonacii.');
+                }
+
+                await obtenerFibonacii(token);
+                alert(`Se han añadido ${m} términos de Fibonacii exitosamente.`);
+            } catch (error) {
+                console.error('Error al añadir Fibonacii:', error);
+            }
+        }
+
+        async function deleteFibonacci() {
+            const token = localStorage.getItem('token');
+
+            if (!confirm('¿Está seguro de que desea eliminar todas las entradas de Fibonacii?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}tienda/fibonacci/1/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Token ' + token,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al eliminar entradas de Fibonacii.');
+                }
+
+                await obtenerFibonacii(token);
+                alert('Todas las entradas de Fibonacii han sido eliminadas.');
+            } catch (error) {
+                console.error('Error al eliminar Fibonacii:', error);
+            }
         }
 
         function generarGraficoActividad(id, data, titulo){
@@ -250,48 +349,84 @@
             Plotly.react(id, [trace1], layout)
         }
 
-    
         function generarGrafico(id, data, titulo) {
             const nValues = data.map(item => item.n);
             const serieValues = data.map(item => item.term);
             const errorValues = data.map(item => item.error);
             const withErrorValues = data.map(item => item.with_error);
-    
+
             const layout = {
                 title: titulo,
                 xaxis: { title: 'N' },
                 yaxis: { title: 'Valor' },
                 showlegend: true
             };
-    
+
             const trace1 = {
                 x: nValues,
                 y: serieValues,
                 mode: 'lines+markers',
                 name: 'Serie'
             };
-    
+
             const trace2 = {
                 x: nValues,
                 y: errorValues,
                 mode: 'lines+markers',
                 name: 'Error'
             };
-    
+
             const trace3 = {
                 x: nValues,
                 y: withErrorValues,
                 mode: 'lines+markers',
                 name: 'Serie con Error'
             };
-    
+
             Plotly.react(id, [trace1, trace2, trace3], layout);
         }
-    
+
+        function generarGraficoFibonacii(data, titulo = 'Serie de Fibonacii') {
+            const nValues = data.map(item => item.n);
+            const fibonacciValues = data.map(item => item.fibonacci);
+            const errorValues = data.map(item => item.error);
+            const withErrorValues = data.map(item => item.with_error);
+
+            const layout = {
+                title: titulo,
+                xaxis: { title: 'N' },
+                yaxis: { title: 'Valor' },
+                showlegend: true
+            };
+
+            const trace1 = {
+                x: nValues,
+                y: fibonacciValues,
+                mode: 'lines+markers',
+                name: 'Fibonacii'
+            };
+
+            const trace2 = {
+                x: nValues,
+                y: errorValues,
+                mode: 'lines+markers',
+                name: 'Error'
+            };
+
+            const trace3 = {
+                x: nValues,
+                y: withErrorValues,
+                mode: 'lines+markers',
+                name: 'Fibonacii con Error'
+            };
+
+            Plotly.react('grafico_fibonacii', [trace1, trace2, trace3], layout);
+        }
+
         function aplicarFiltros() {
             const pk = currentPk;  
             const ip = currentIp;  
-    
+
             const sineDataFiltered = sineDataFull.filter(item => 
                 (!pk || item.user.pk == pk) && (!ip || item.user.ip == ip)
             );
@@ -301,22 +436,30 @@
             const tangentDataFiltered = tangentDataFull.filter(item => 
                 (!pk || item.user.pk == pk) && (!ip || item.user.ip == ip)
             );
-    
+
+            const fibonacciDataFiltered = fibonacciDataFull.filter(item => 
+                (!pk || (item.ip && usuarios.find(u => u.pk == pk && u.ip == item.ip))) &&
+                (!ip || item.ip == ip)
+            );
+
             generarGrafico('grafico_seno', sineDataFiltered, 'Serie Seno');
             generarGrafico('grafico_coseno', cosineDataFiltered, 'Serie Coseno');
             generarGrafico('grafico_tangente', tangentDataFiltered, 'Serie Tangente');
+            generarGraficoActividad('grafico_actividad', activityDataFull, 'Actividad de usuarios');
+            generarGraficoFibonacii(fibonacciDataFiltered);
         }
-    
+
         document.getElementById('filter-pk').addEventListener('change', function() {
             currentPk = this.value; 
             aplicarFiltros();
         });
-    
+
         document.getElementById('filter-ip').addEventListener('change', function() {
             currentIp = this.value; 
             aplicarFiltros();  
         });
+
     </script>
-    
+
 </body>
 </html>
