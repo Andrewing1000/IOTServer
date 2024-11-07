@@ -9,7 +9,7 @@ class Articulo(models.Model):
 
 
 class DrumHit(models.Model):
-    time = models.TimeField()
+    time = models.FloatField()
     value = models.FloatField()
     ip = models.CharField(
         max_length=255,

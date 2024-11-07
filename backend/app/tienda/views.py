@@ -8,11 +8,13 @@ from django.db import connection
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import SineSeriesSerializer, CosineSeriesSerializer, TangentSeriesSerializer, IOTClientSerializer, FibonacciSerializer
+from .serializers import SineSeriesSerializer, CosineSeriesSerializer, TangentSeriesSerializer, IOTClientSerializer, FibonacciSerializer, DrumHitSerializer
 
 from rest_framework import permissions, authentication, status
 
 from random import randrange
+import time
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 
 class ArticulosViewSet(viewsets.ModelViewSet):
 # Create your views here.
@@ -28,19 +30,39 @@ class CreateIOTClient(viewsets.ModelViewSet):
 
 
 class DrumHitInterface(views.APIView):
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_client_ip(self, request):
         return request.META.get('HTTP_CEBOLLIN', '')
     
+    @extend_schema(
+            request = DrumHitSerializer,
+    )
     def post(self, request):
         data = request.data
         value = data.get('value', None)
         ip = self.get_client_ip(request)
-        DrumHit.objects.create(ip=ip, value=value)
+        t = int(time.time()%86400)
+        obj = DrumHit.objects.create(ip=ip, value=float(value), time=t)
+        return Response(DrumHitSerializer(obj).data)
+
+    def delete(self, request, *args, **kwargs):
+        ip = request.query_params.get('ip', None)
+        if not ip:
+            return Response('No se encontraron registros', status=status.HTTP_404_NOT_FOUND)
+        DrumHit.objects.filter(ip=ip).delete()
+        return Response(status=status.HTTP_200_OK)
 
 
+class DrumHitViewSet(viewsets.ModelViewSet):
+    queryset = DrumHit.objects.all()
+    serializer_class = DrumHitSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
 
-
+    def get_queryset(self):
+        return DrumHit.objects.all().order_by('time')
 
 class FibonacciInterface(views.APIView):
 

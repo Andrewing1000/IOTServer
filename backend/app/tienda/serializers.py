@@ -1,5 +1,5 @@
 from rest_framework import serializers, exceptions
-from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation, IOTClient, Fibonacci
+from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation, IOTClient, Fibonacci, DrumHit
 from user.serializers import UserSerializer
 
 from django.contrib.auth import get_user_model
@@ -25,6 +25,13 @@ def fact(n):
 
     precomputed_fact += [0] * (n + 1 - len(precomputed_fact))
     return fact(n)
+
+
+class DrumHitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DrumHit
+        fields = ['value', 'time', 'ip']
+        extra_kwargs = {'time': {'read_only': True}, 'ip': {'read_only': True}}
 
 
 class FibonacciSerializer(serializers.ModelSerializer):

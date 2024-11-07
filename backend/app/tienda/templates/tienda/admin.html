@@ -129,11 +129,11 @@
 
         <!-- Fibonacii Section -->
         <div class="fibonacii">
-            <h2>Fibonacii</h2>
+            <h2>DrumHit</h2>
             <div class="input-container">
                 <label for="fibonacci-m">Número de términos (m):</label>
                 <input type="number" id="fibonacci-m" class="fibonacci-input" min="1" value="5">
-                <button class="fibonacci-button" onclick="addFibonacci()">Añadir Términos</button>
+                <!-- <button class="fibonacci-button" onclick="addFibonacci()">Añadir Términos</button> -->
                 <button class="fibonacci-button delete" onclick="deleteFibonacci()">Eliminar Todos</button>
             </div>
             <div id="grafico_fibonacii" style="width:100%;height:300px;"></div>
@@ -257,7 +257,7 @@
         }
 
         async function fetchFibonacii(token) {
-            const response = await fetch(`${BASE_URL}tienda/fibonacci/`, {
+            const response = await fetch(`${BASE_URL}tienda/drum/`, {
                 method: 'GET',
                 headers: {
                     'Authorization': 'Token ' + token,
@@ -309,7 +309,7 @@
             }
 
             try {
-                const response = await fetch(`${BASE_URL}tienda/fibonacci/1/`, {
+                const response = await fetch(`${BASE_URL}tienda/druminterface/`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': 'Token ' + token,

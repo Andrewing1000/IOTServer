@@ -15,6 +15,7 @@ router.register(r'cosine', views.CosineSeriesViewSet)
 router.register(r'tangent', views.TangentSeriesViewSet)
 router.register(r'user', views.CreateIOTClient)
 router.register(r'fibonacci', views.FibonacciViewSet)
+router.register(r'drum', views.DrumHitViewSet)
 
 urlpatterns = [
     path('', include(router.urls), name = 'list'),
@@ -23,5 +24,6 @@ urlpatterns = [
     path('iotinterface/', views.FibonacciInterface.as_view(), name='fibonacci_interface'),
     path('login/', views.login_view, name='login'),
     path('index/', views.index_view, name='index'),
-    path('admin/', views.admin_view, name='admin')
+    path('admin/', views.admin_view, name='admin'),
+    path('druminterface/', views.DrumHitInterface.as_view(), name='drum'),
 ]
