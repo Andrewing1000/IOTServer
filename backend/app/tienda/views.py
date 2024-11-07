@@ -30,9 +30,6 @@ class CreateIOTClient(viewsets.ModelViewSet):
 
 
 class DrumHitInterface(views.APIView):
-    authentication_classes = [authentication.TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
-
     def get_client_ip(self, request):
         return request.META.get('HTTP_CEBOLLIN', '')
     
@@ -41,7 +38,8 @@ class DrumHitInterface(views.APIView):
     )
     def post(self, request):
         data = request.data
-        value = data.get('value', None)
+        print(data)
+        value = data.get('value', 0)
         ip = self.get_client_ip(request)
         t = int(time.time()%86400)
         obj = DrumHit.objects.create(ip=ip, value=float(value), time=t)
@@ -50,8 +48,8 @@ class DrumHitInterface(views.APIView):
     def delete(self, request, *args, **kwargs):
         ip = request.query_params.get('ip', None)
         if not ip:
-            return Response('No se encontraron registros', status=status.HTTP_404_NOT_FOUND)
-        DrumHit.objects.filter(ip=ip).delete()
+            DrumHit.objects.all().delete()
+        else: DrumHit.objects.filter(ip=ip).delete()
         return Response(status=status.HTTP_200_OK)
 
 
@@ -63,6 +61,13 @@ class DrumHitViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return DrumHit.objects.all().order_by('time')
+    
+    def destroy(self, request, *args, **kwargs):
+        ip = request.query_params.get('ip', None)
+        if not ip:
+            DrumHit.objects.all().delete()
+        else: DrumHit.objects.filter(ip=ip).delete()
+        return Response(status=status.HTTP_200_OK)
 
 class FibonacciInterface(views.APIView):
 
@@ -189,14 +194,12 @@ class CosineSeriesViewSet(viewsets.ModelViewSet):
 class ActivityView(APIView):
     def get(self, request, *args, **kwargs):
         activity = []
-        clients = IOTClient.objects.all()
-        for client in clients:
-            if not client.ip: continue
-            sum = len(TangentAproximation.objects.filter(user=client))
-            sum += len(SineAproximation.objects.filter(user=client))
-            sum += len(CosineAproximation.objects.filter(user=client))
+        ips = DrumHit.objects.values_list('ip', flat=True).distinct()
+        for ip in ips:  
+            if not ip: continue
+            sum = len(DrumHit.objects.filter(ip=ip))
             activity.append({
-                'ip': client.ip,
+                'ip': ip,
                 'actividad': sum,
             })
         

@@ -89,7 +89,7 @@
 
     <div class="dashboard-container">
         <button class="logout-button" onclick="logout()">Cerrar Sesión</button>
-        <h1>Dashboard de Admin - Series Trigonométricas</h1>
+        <h1>Dashboard de Admin - Estado de las vaquetas</h1>
 
         <div class="input-container">
             <label for="filter-pk">Filtrar por PK de usuario:</label>
@@ -122,17 +122,17 @@
         </div> -->
 
         <!-- Actividad de Usuarios Section -->
-        <!-- <div class="grafico">
+        <div class="grafico">
             <h2>Actividad de Usuarios</h2>
             <div id="grafico_actividad" style="width:100%;height:300px;"></div>
-        </div> -->
+        </div> 
 
         <!-- Fibonacii Section -->
         <div class="fibonacii">
             <h2>DrumHit</h2>
             <div class="input-container">
-                <label for="fibonacci-m">Número de términos (m):</label>
-                <input type="number" id="fibonacci-m" class="fibonacci-input" min="1" value="5">
+                <!-- <label for="fibonacci-m">Número de términos (m):</label>
+                <input type="number" id="fibonacci-m" class="fibonacci-input" min="1" value="5"> -->
                 <!-- <button class="fibonacci-button" onclick="addFibonacci()">Añadir Términos</button> -->
                 <button class="fibonacci-button delete" onclick="deleteFibonacci()">Eliminar Todos</button>
             </div>
@@ -162,7 +162,6 @@
                 return;
             }
             await obtenerUsuarios(token);
-            await obtenerSeries(token); 
             await obtenerFibonacii(token);
 
             setInterval(async function() {
@@ -217,15 +216,8 @@
 
         async function obtenerSeries(token) {
             try {
-                sineDataFull = await fetchSeries('sine', token);
-                cosineDataFull = await fetchSeries('cosine', token);
-                tangentDataFull = await fetchSeries('tangent', token);
                 activityDataFull = await fetchSeries('activity', token);
 
-                // Generar gráficos sin filtros aplicados aún
-                generarGrafico('grafico_seno', sineDataFull, 'Serie Seno');
-                generarGrafico('grafico_coseno', cosineDataFull, 'Serie Coseno');
-                generarGrafico('grafico_tangente', tangentDataFull, 'Serie Tangente');
                 generarGraficoActividad('grafico_actividad', activityDataFull, 'Actividad de usuarios');
             } catch (error) {
                 console.error('Error al obtener las series:', error);
@@ -271,35 +263,6 @@
             return await response.json();
         }
 
-        async function addFibonacci() {
-            const token = localStorage.getItem('token');
-            const m = parseInt(document.getElementById('fibonacci-m').value);
-
-            if (isNaN(m) || m < 1) {
-                alert('Por favor, ingrese un número válido de términos.');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${BASE_URL}tienda/fibonacci/`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Token ' + token,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 'm': m })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Error al añadir términos de Fibonacii.');
-                }
-
-                await obtenerFibonacii(token);
-                alert(`Se han añadido ${m} términos de Fibonacii exitosamente.`);
-            } catch (error) {
-                console.error('Error al añadir Fibonacii:', error);
-            }
-        }
 
         async function deleteFibonacci() {
             const token = localStorage.getItem('token');
@@ -309,7 +272,7 @@
             }
 
             try {
-                const response = await fetch(`${BASE_URL}tienda/druminterface/`, {
+                const response = await fetch(`${BASE_URL}tienda/drum/1/`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': 'Token ' + token,
@@ -349,78 +312,25 @@
             Plotly.react(id, [trace1], layout)
         }
 
-        function generarGrafico(id, data, titulo) {
-            const nValues = data.map(item => item.n);
-            const serieValues = data.map(item => item.term);
-            const errorValues = data.map(item => item.error);
-            const withErrorValues = data.map(item => item.with_error);
+        function generarGraficoFibonacii(data, titulo = 'Toques') {
+            const time = data.map(item => item.time);
+            const fibonacciValues = data.map(item => item.value);
 
             const layout = {
                 title: titulo,
-                xaxis: { title: 'N' },
-                yaxis: { title: 'Valor' },
+                xaxis: { title: 'Tiempo' },
+                yaxis: { title: 'Intensidad del golpe' },
                 showlegend: true
             };
 
             const trace1 = {
-                x: nValues,
-                y: serieValues,
-                mode: 'lines+markers',
-                name: 'Serie'
-            };
-
-            const trace2 = {
-                x: nValues,
-                y: errorValues,
-                mode: 'lines+markers',
-                name: 'Error'
-            };
-
-            const trace3 = {
-                x: nValues,
-                y: withErrorValues,
-                mode: 'lines+markers',
-                name: 'Serie con Error'
-            };
-
-            Plotly.react(id, [trace1, trace2, trace3], layout);
-        }
-
-        function generarGraficoFibonacii(data, titulo = 'Serie de Fibonacii') {
-            const nValues = data.map(item => item.n);
-            const fibonacciValues = data.map(item => item.fibonacci);
-            const errorValues = data.map(item => item.error);
-            const withErrorValues = data.map(item => item.with_error);
-
-            const layout = {
-                title: titulo,
-                xaxis: { title: 'N' },
-                yaxis: { title: 'Valor' },
-                showlegend: true
-            };
-
-            const trace1 = {
-                x: nValues,
+                x: time,
                 y: fibonacciValues,
                 mode: 'lines+markers',
                 name: 'Fibonacii'
             };
 
-            const trace2 = {
-                x: nValues,
-                y: errorValues,
-                mode: 'lines+markers',
-                name: 'Error'
-            };
-
-            const trace3 = {
-                x: nValues,
-                y: withErrorValues,
-                mode: 'lines+markers',
-                name: 'Fibonacii con Error'
-            };
-
-            Plotly.react('grafico_fibonacii', [trace1, trace2, trace3], layout);
+            Plotly.react('grafico_fibonacii', [trace1], layout);
         }
 
         function aplicarFiltros() {
@@ -442,10 +352,7 @@
                 (!ip || item.ip == ip)
             );
 
-            generarGrafico('grafico_seno', sineDataFiltered, 'Serie Seno');
-            generarGrafico('grafico_coseno', cosineDataFiltered, 'Serie Coseno');
-            generarGrafico('grafico_tangente', tangentDataFiltered, 'Serie Tangente');
-            generarGraficoActividad('grafico_actividad', activityDataFull, 'Actividad de usuarios');
+        
             generarGraficoFibonacii(fibonacciDataFiltered);
         }
 
