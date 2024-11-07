@@ -1,4 +1,4 @@
-﻿from machine import Pin, PWM, ADC
+from machine import Pin, PWM, ADC
 import network
 import socket
 import time
@@ -6,7 +6,7 @@ import asyncio
 import select
 
 mode = 0;
-val = 100;
+val = 20;
 led_3 = PWM(Pin(12, Pin.OUT))
 led_2 = PWM(Pin(14, Pin.OUT))
 led_1 = PWM(Pin(27, Pin.OUT))
@@ -26,7 +26,7 @@ notifing=False
 success=False
 timeout=4
 transition=100
-t0=0
+t0=0;
 
 wifi = network.WLAN(network.STA_IF)
 wifi.active(False)
@@ -56,7 +56,7 @@ print(addr)
 
 async def create_request():
     global loading;
-    print("...Creando instancia")
+    print("...Registrando golpe")
     client=socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
     client.setblocking(False)
     
@@ -72,15 +72,23 @@ async def create_request():
         _, writable, _ = select.select([], [client], [], 0)
         if writable:
             break
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0)
 
-    path = "/tienda/iotinterface/"
+    intensity = pot.read()/4095
+    body = f'{{"value":{intensity}}}'
+    length = len(body.encode('utf-8'))
+    
+
+    
+    path = "/tienda/druminterface/"
     request = f"POST {path} HTTP/1.1\r\n"
     request += f"Host: {addr[0]}\r\n"
     request += "Content-Type: application/json\r\n"
-    request += "Content-Length: 0\r\n"
+    request += f"Content-Length: {length}\r\n"
+    request += f"CEBOLLIN: {wifi.ifconfig()[0]}\r\n"
     request += "Connection: close\r\n\r\n"
-        
+    request += body
+    
     success = False
     while abs(time.time()-t0)<timeout:
         if not loading: break
@@ -90,7 +98,7 @@ async def create_request():
             break
         except OSError as e:
             if e.args[0] == 119:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0)
                 
     if not success:
         return success
@@ -188,12 +196,11 @@ pot.atten(ADC.ATTN_11DB)
 button.irq(trigger=Pin.IRQ_FALLING, handler=switch_mode)
 
 async def refresh():
-    global loading, mode, notifing
+    global loading, val, notifing
     while(True):
-        mode = int(pot.read()*1.9999/4095)
-        for led in leds:
-            led.duty(0)
-        leds[mode].duty(val)
+        val = int(pot.read()*1023/4095)
+        led_1.duty(val)
+        led_2.duty(0)
         
         while(loading):
             leds[mode].duty(val)
@@ -221,8 +228,11 @@ async def request():
         res = None
         success = False
         if mode == 0:
-            res = await create_request()
-            status = get_status(res)
+            try:
+                res = await create_request()
+                status = get_status(res)
+            except:
+                status = False
             print("--------------------------------")
             if not res:
                 print("Error de conección")
@@ -230,7 +240,7 @@ async def request():
                 print("Error interno")
             else:
                 success = True
-                print("Creación exitosa")
+                print("Registro exitoso")
                 print(get_body(res))
             
         else:

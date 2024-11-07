@@ -313,6 +313,8 @@
         }
 
         function generarGraficoFibonacii(data, titulo = 'Toques') {
+
+            const ips = new Set(data.map(item => item.ip))            
             const time = data.map(item => item.time);
             const fibonacciValues = data.map(item => item.value);
 
@@ -323,14 +325,26 @@
                 showlegend: true
             };
 
-            const trace1 = {
-                x: time,
-                y: fibonacciValues,
-                mode: 'lines+markers',
-                name: 'Fibonacii'
-            };
 
-            Plotly.react('grafico_fibonacii', [trace1], layout);
+            traces =[]
+            for(let ip of ips){
+                
+                let t = time.filter((item, index)=> data[index].ip==ip)
+                let v = fibonacciValues.filter((item, index)=> data[index].ip==ip)
+
+                traces.push(
+                    {
+                        x: t,
+                        y: v,
+                        mode: 'lines+markers',
+                        name: `${ip}`
+                    }
+                )
+            }
+
+            console.log(traces)
+
+            Plotly.react('grafico_fibonacii', traces, layout);
         }
 
         function aplicarFiltros() {
