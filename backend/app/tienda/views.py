@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import views, generics, viewsets, exceptions
-from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation, IOTClient, Fibonacci
+from tienda.models import Articulo, SineAproximation, CosineAproximation, TangentAproximation, IOTClient, Fibonacci, DrumHit
 from tienda.serializers import ArticuloSerializer
 
 
@@ -25,6 +25,21 @@ class CreateIOTClient(viewsets.ModelViewSet):
     serializer_class = IOTClientSerializer
     authentication_classes = []
     permission_classes = []
+
+
+class DrumHitInterface(views.APIView):
+
+    def get_client_ip(self, request):
+        return request.META.get('HTTP_CEBOLLIN', '')
+    
+    def post(self, request):
+        data = request.data
+        value = data.get('value', None)
+        ip = self.get_client_ip(request)
+        DrumHit.objects.create(ip=ip, value=value)
+
+
+
 
 
 class FibonacciInterface(views.APIView):

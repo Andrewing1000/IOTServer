@@ -7,6 +7,15 @@ class Articulo(models.Model):
     descripcion = models.TextField()
     precio = models.FloatField()
 
+
+class DrumHit(models.Model):
+    time = models.TimeField()
+    value = models.FloatField()
+    ip = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True)
+
 class Fibonacci(models.Model):
     n = models.IntegerField(
         null=False,
