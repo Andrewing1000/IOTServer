@@ -57,6 +57,7 @@ print(addr)
 async def create_request():
     global loading;
     print("...Creando instancia")
+    
     client=socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
     client.setblocking(False)
     
@@ -73,6 +74,8 @@ async def create_request():
         if writable:
             break
         await asyncio.sleep(0.1)
+        
+    start = time.time_ns()    
 
     path = "/tienda/iotinterface/"
     request = f"POST {path} HTTP/1.1\r\n"
@@ -81,7 +84,7 @@ async def create_request():
     request += "Content-Length: 0\r\n"
     request += f"CEBOLLIN: {wifi.ifconfig()[0]}\r\n"
     request += "Connection: close\r\n\r\n"
-        
+    
     success = False
     while abs(time.time()-t0)<timeout:
         if not loading: break
@@ -91,7 +94,7 @@ async def create_request():
             break
         except OSError as e:
             if e.args[0] == 119:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0)
                 
     if not success:
         return success
@@ -105,10 +108,11 @@ async def create_request():
             response += chunk
         except OSError as e:
             if e.args[0] == 11: 
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0)
             else:
                 raise                 
-                
+         
+    #print("Response time:", (time.time_ns()-start)/1e6)     
     response = response.decode()
     loading = False
     client.close()
