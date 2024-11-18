@@ -34,6 +34,7 @@ urlpatterns = [
     path('health_check/', HealthCheck.as_view(), name='health_check'),
     path('user/', include('user.urls')),
     path('tienda/', include('tienda.urls')),
+    path('airdrum/', include('airdrum.urls')),
 ]
 
 if settings.DEBUG:

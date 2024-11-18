@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Tambor Interactivo</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      overflow-y: auto;
+      max-height: 90vh;
+    }
+    button {
+      display: block;
+      margin-bottom: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <h3>Controles de Animación</h3>
+    <button id="animateY1">Animar Baqueta</button>
+    <button id="stop1">Detener Baqueta</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Escena
+    const scene = new THREE.Scene();
+
+    // Cámara
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 15;
+
+    // Renderizador
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Material
+    const baquetaMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+    const drumMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+
+    // Crear baqueta
+    function createBaqueta() {
+      const bodyGeometry = new THREE.CylinderGeometry(0.1, 0.1, 8, 32);
+      const body = new THREE.Mesh(bodyGeometry, baquetaMaterial);
+      body.rotation.x = Math.PI / 2; // Inicialmente horizontal
+
+      const tipGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+      const tip = new THREE.Mesh(tipGeometry, baquetaMaterial);
+      tip.position.set(0, 0, 4);
+      body.add(tip);
+      scene.add(body);
+      return body;
+    }
+
+    const baqueta1 = createBaqueta();
+    baqueta1.position.y = 5;
+
+    // Crear tambor
+    const drumGeometry = new THREE.CylinderGeometry(5, 5, 2, 32);
+    const drum = new THREE.Mesh(drumGeometry, drumMaterial);
+    drum.position.y = 0;
+    scene.add(drum);
+
+    // Luz
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 10, 10);
+    scene.add(directionalLight);
+
+    // Sonido
+    const audioListener = new THREE.AudioListener();
+    camera.add(audioListener);
+
+    const sound = new THREE.Audio(audioListener);
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load('mi-sonido.mp3', function (buffer) {
+      sound.setBuffer(buffer);
+      sound.setLoop(false);
+      sound.setVolume(1.0);
+    });
+
+    // Animaciones
+    let animatingY1 = false;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (animatingY1) {
+        baqueta1.position.y -= 0.1;
+        if (baqueta1.position.y <= drum.position.y + 1.1) {
+          baqueta1.position.y = 5; // Reset posición
+          if (!sound.isPlaying) sound.play(); // Reproduce sonido
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Controladores de animación
+    document.getElementById('animateY1').addEventListener('click', () => {
+      animatingY1 = true;
+    });
+    document.getElementById('stop1').addEventListener('click', () => {
+      animatingY1 = false;
+    });
+
+    // Responsividad
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+</head>
+<body>
+    <h1>COCO</h1>
+
+    <form id="123">
+        <input type="text" name="message">
+    </form>
+
+
+    <div id="messages">
+
+    </div>
+    <script type="text/javascript">
+        let url = `ws://${window.location.host}/ws/socket-server/`
+
+        const streamSocket = new WebSocket(url)
+
+        streamSocket.binaryType = "arraybuffer";
+
+        streamSocket.onmessage = function(e){
+            let data = 0.0
+            if (e.data instanceof ArrayBuffer) {
+                const buffer = e.data;
+                const view = new DataView(buffer);
+                data = view.getFloat32(4, false); 
+            } else {
+                data = JSON.parse(e.data)['command']
+            }
+
+            console.log('Data:', data)
+            let messages = document.getElementById('messages') 
+            messages.insertAdjacentHTML('beforeend', `<div><p>${data}</p></div>`)
+        }
+
+        const form  = document.getElementById('123')
+        form.addEventListener('submit', (e)=>{
+            e.preventDefault()
+
+            // const buffer = new ArrayBuffer(8); // Create a buffer of 8 bytes
+            // const view = new DataView(buffer);
+
+            // let data = 3.14
+            // let message = e.target.message.value
+            // try{
+            //     data = parseInt(message)
+            // }catch(error){
+            //     console.log("Not an int")
+            // }
+
+            // view.setInt32(0, data, false);     
+            // view.setFloat32(4, data, false);
+
+
+            let message = e.target.message.value
+            message  = JSON.stringify({
+                'command': message
+            })
+            
+            streamSocket.send(message)
+            form.reset()
+        })
+        
+    </script>
+</body>
+</html>

@@ -30,5 +30,6 @@ RUN python -m venv /py && \
     chmod -R 755 /vol
 
 ENV PATH="/py/bin:$PATH"
-
+RUN pip install daphne
+RUN pip install numpy
 USER django-user

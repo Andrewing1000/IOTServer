@@ -315,13 +315,17 @@
         function generarGraficoFibonacii(data, titulo = 'Toques') {
 
             const ips = new Set(data.map(item => item.ip))            
-            const time = data.map(item => item.time);
+            let time = data.map(item => item.time);
             const fibonacciValues = data.map(item => item.value);
-
+            let first = time[0]
+            time = time.map(item => (item-first)/60 )
             const layout = {
                 title: titulo,
-                xaxis: { title: 'Tiempo' },
+                xaxis: { title: 'Tiempo',
+                    range: [0, 4],
+                },
                 yaxis: { title: 'Intensidad del golpe' },
+
                 showlegend: true
             };
 

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Baquetas Animadas</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      overflow-y: auto;
+      max-height: 90vh;
+    }
+    label, input, button {
+      display: block;
+      margin-bottom: 5px;
+    }
+    button {
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <h3>Controles de Animación para Baqueta 1</h3>
+    <button id="animateX1">Animar X</button>
+    <button id="animateY1">Animar Y</button>
+    <button id="animateZ1">Animar Z</button>
+    <button id="animateRotX1">Rotar X</button>
+    <button id="animateRotY1">Rotar Y</button>
+    <button id="animateRotZ1">Rotar Z</button>
+    <button id="stop1">Detener Baqueta 1</button>
+
+    <h3>Controles de Animación para Baqueta 2</h3>
+    <button id="animateX2">Animar X</button>
+    <button id="animateY2">Animar Y</button>
+    <button id="animateZ2">Animar Z</button>
+    <button id="animateRotX2">Rotar X</button>
+    <button id="animateRotY2">Rotar Y</button>
+    <button id="animateRotZ2">Rotar Z</button>
+    <button id="stop2">Detener Baqueta 2</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Escena
+    const scene = new THREE.Scene();
+
+    // Cámara
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 15;
+
+    // Renderizador
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Material
+    const baquetaMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+
+    // Crear baquetas
+    function createBaqueta() {
+      const bodyGeometry = new THREE.CylinderGeometry(0.1, 0.1, 8, 32);
+      const body = new THREE.Mesh(bodyGeometry, baquetaMaterial);
+      body.rotation.x = Math.PI / 2; // Inicialmente horizontal
+
+      const tipGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+      const tip = new THREE.Mesh(tipGeometry, baquetaMaterial);
+      tip.position.set(0, 0, 4);
+      body.add(tip);
+      scene.add(body);
+      return body;
+    }
+
+    const baqueta1 = createBaqueta();
+    const baqueta2 = createBaqueta();
+
+    // Posiciones iniciales
+    baqueta2.position.x = 5;
+
+    // Luz
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 10, 10);
+    scene.add(directionalLight);
+
+    // Animaciones
+    let animating1 = { x: false, y: false, z: false, rotX: false, rotY: false, rotZ: false };
+    let animating2 = { x: false, y: false, z: false, rotX: false, rotY: false, rotZ: false };
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Animaciones para Baqueta 1
+      if (animating1.x) baqueta1.position.x += 0.05;
+      if (animating1.y) baqueta1.position.y += 0.05;
+      if (animating1.z) baqueta1.position.z += 0.05;
+      if (animating1.rotX) baqueta1.rotation.x += 0.05;
+      if (animating1.rotY) baqueta1.rotation.y += 0.05;
+      if (animating1.rotZ) baqueta1.rotation.z += 0.05;
+
+      // Animaciones para Baqueta 2
+      if (animating2.x) baqueta2.position.x += 0.05;
+      if (animating2.y) baqueta2.position.y += 0.05;
+      if (animating2.z) baqueta2.position.z += 0.05;
+      if (animating2.rotX) baqueta2.rotation.x += 0.05;
+      if (animating2.rotY) baqueta2.rotation.y += 0.05;
+      if (animating2.rotZ) baqueta2.rotation.z += 0.05;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Controladores de animación
+    function toggleAnimation(baqueta, property) {
+      baqueta[property] = !baqueta[property];
+    }
+
+    document.getElementById('animateX1').addEventListener('click', () => toggleAnimation(animating1, 'x'));
+    document.getElementById('animateY1').addEventListener('click', () => toggleAnimation(animating1, 'y'));
+    document.getElementById('animateZ1').addEventListener('click', () => toggleAnimation(animating1, 'z'));
+    document.getElementById('animateRotX1').addEventListener('click', () => toggleAnimation(animating1, 'rotX'));
+    document.getElementById('animateRotY1').addEventListener('click', () => toggleAnimation(animating1, 'rotY'));
+    document.getElementById('animateRotZ1').addEventListener('click', () => toggleAnimation(animating1, 'rotZ'));
+    document.getElementById('stop1').addEventListener('click', () => animating1 = { x: false, y: false, z: false, rotX: false, rotY: false, rotZ: false });
+
+    document.getElementById('animateX2').addEventListener('click', () => toggleAnimation(animating2, 'x'));
+    document.getElementById('animateY2').addEventListener('click', () => toggleAnimation(animating2, 'y'));
+    document.getElementById('animateZ2').addEventListener('click', () => toggleAnimation(animating2, 'z'));
+    document.getElementById('animateRotX2').addEventListener('click', () => toggleAnimation(animating2, 'rotX'));
+    document.getElementById('animateRotY2').addEventListener('click', () => toggleAnimation(animating2, 'rotY'));
+    document.getElementById('animateRotZ2').addEventListener('click', () => toggleAnimation(animating2, 'rotZ'));
+    document.getElementById('stop2').addEventListener('click', () => animating2 = { x: false, y: false, z: false, rotX: false, rotY: false, rotZ: false });
+
+    // Responsividad
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+  </script>
+</body>
+</html>
