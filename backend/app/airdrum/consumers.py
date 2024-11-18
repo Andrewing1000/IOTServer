@@ -6,6 +6,7 @@ from .madgwick.madgwick_ahrs import MadgwickAHRS
 
 import struct
 import numpy
+import time
 from numpy.linalg import norm
 class StreamingConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -45,11 +46,12 @@ class StreamingConsumer(AsyncWebsocketConsumer):
         gyro = tuple(float(value)*self.gyro_sf/self.gyro_so for value in gyro)
 
 
-        
         self.filter.samplePeriod = period 
-        self.filter.update(acc, gyro, mag)
+        print(gyro)
+        self.filter.update(gyro, acc, mag)
 
         roll, pitch, yaw = self.filter.quaternion.to_euler_angles()
+        #print(yaw)
         await self.channel_layer.group_send(
             self.room_group_name,
             {

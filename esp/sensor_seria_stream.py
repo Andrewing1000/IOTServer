@@ -15,24 +15,15 @@ sensor.mpu6500._register_char(0x1D, 0x03)
  
 print(i2c.scan())
  
-acc = [0, 0, 0]
-gyro = [0, 0, 0]
-mag = [0, 0, 0]
-last_update = time.ticks_us();
-elapsed_time = 0;
-temp = 0
- 
-def read_data(timer):
-    global acc, gyro, mag, temp, elapsed_time, last_update
-    acc = sensor.raw_acceleration
-    gyro = sensor.raw_gyro
-    mag = sensor.magnetic
-    temp = sensor.temperature
-    elapsed_time = abs(time.ticks_diff(time.ticks_us(), last_update))
-    last_update = time.ticks_us()
 
-tm = Timer(0)
-tm.init(mode = Timer.PERIODIC, period=5, callback=read_data)
+
+ 
+# def read_data(timer):
+#     global acc, gyro, mag, temp, elapsed_time, last_update
+#     
+# 
+# tm = Timer(0)
+# tm.init(mode = Timer.PERIODIC, period=5, callback=read_data)
 
 # # uart = UART(0, baudrate=100000)
 # 
@@ -73,21 +64,33 @@ async def connect_wifi():
     print("Connected to Wi-Fi:", wlan.ifconfig())
 
 
+last_update = time.ticks_us();
+
+
 
 async def websocket_client():
+    global last_update
     ws = AsyncWebsocketClient()
     print("Connecting to WebSocket " , WEBSOCKET_URL)
     await ws.handshake(WEBSOCKET_URL)
     print("Connected to WebSocket server.")
     while True:
         #t0 = time.ticks_ms()
+        
+        acc = sensor.raw_acceleration
+        gyro = sensor.raw_gyro
+        mag = sensor.magnetic
+        temp = sensor.temperature
+        elapsed_time = abs(time.ticks_diff(time.ticks_us(), last_update))
+        last_update = time.ticks_us()
+        
         data = struct.pack('>6H3d1Q', *(acc + gyro + mag + (elapsed_time, )))
         await ws.send(data)
 
 #         response = await ws.recv()
 #         data = struct.unpack('>if', response)
 #         print("Response ", data)
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.1)
 
 async def main():
     await connect_wifi()
