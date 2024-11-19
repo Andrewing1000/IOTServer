@@ -2,6 +2,7 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import async_to_sync
 from .madgwick.madgwick_ahrs import MadgwickAHRS
+from .madgwick.queue_filter import FIRFilter
 
 
 import struct
@@ -11,12 +12,15 @@ from numpy.linalg import norm
 class StreamingConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_group_name = 'test'
-        self.acc_so = 16384.0
-        self.gyro_so = 131.0
+        self.acc_so = 4096
+        self.gyro_so = 32.8
         self.gyro_sf = 0.017453292519943
 
         self.filter = MadgwickAHRS(sampleperiod=1/100)
-
+        self.acc_filter = FIRFilter(cutoff=60)
+        self.gyro_filter = FIRFilter(cutoff=60)
+        self.mag_filter = FIRFilter(cutoff=10)
+    
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name)
@@ -45,13 +49,15 @@ class StreamingConsumer(AsyncWebsocketConsumer):
         period = stream[9]/1e6
         gyro = tuple(float(value)*self.gyro_sf/self.gyro_so for value in gyro)
 
+        self.acc_filter.update_sampling_frequency(1/period)
+        acc = self.acc_filter.filter(acc)
+        gyro = self.gyro_filter.filter(gyro)
+        mag = self.mag_filter.filter(mag)
 
-        self.filter.samplePeriod = period 
-        
+        self.filter.samplePeriod = period         
         self.filter.update(gyro, acc, mag)
-
         roll, pitch, yaw = self.filter.quaternion.to_euler_angles()
-        #print(yaw*180/numpy.pi)
+
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -76,10 +82,6 @@ class StreamingConsumer(AsyncWebsocketConsumer):
         pitch = event['pitch']
         roll = event['roll']
 
-        data = {
-            'yaw' : yaw,
-            'pitch': pitch,
-            'roll': roll
-        }
+        data = struct.pack(">3d", roll, pitch, yaw)
         #g = norm(numpy.array(acc))
-        await self.send(text_data=json.dumps(data))
+        await self.send(bytes_data=data)

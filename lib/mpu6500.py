@@ -173,7 +173,7 @@ class MPU6500:
             oz += gz
             count -= 1
 
-        self._gyro_offset = (int(ox / n), int(oy / n), int(oz / n))
+        self._gyro_offset = (ox / n, oy / n, oz / n)
         return self._gyro_offset
 
     def _register_short(self, register, value=None, buf=bytearray(2)):

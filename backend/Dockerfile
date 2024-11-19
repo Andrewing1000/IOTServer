@@ -32,4 +32,5 @@ RUN python -m venv /py && \
 ENV PATH="/py/bin:$PATH"
 RUN pip install daphne
 RUN pip install numpy
+RUN pip install scipy
 USER django-user

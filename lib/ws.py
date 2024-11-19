@@ -171,6 +171,37 @@ class AsyncWebsocketClient:
                          for i, b in enumerate(data))
 
         return fin, opcode, data
+    
+    async def read_pong(self, max_size=None):
+
+        # Frame header
+        byte1, byte2 = struct.unpack('!BB', await self.a_read(2))
+
+        # Byte 1: FIN(1) _(1) _(1) _(1) OPCODE(4)
+        fin = bool(byte1 & 0x80)
+        opcode = byte1 & 0x0f
+
+        # Byte 2: MASK(1) LENGTH(7)
+        mask = bool(byte2 & (1 << 7))
+        length = byte2 & 0x7f
+
+        if length == 126:  # Magic number, length header is 2 bytes
+            length, = struct.unpack('!H', await self.a_read(2))
+        elif length == 127:  # Magic number, length header is 8 bytes
+            length, = struct.unpack('!Q', await self.a_read(8))
+
+        if mask:  # Mask is 4 bytes
+            mask_bits = await self.a_read(4)
+
+        try:
+            aux_length = length
+            data = self.sock.read()
+                
+        except MemoryError:
+            self.close(code=CLOSE_TOO_BIG)
+            return True, OP_CLOSE, None
+
+        return fin, opcode
 
     def write_frame(self, opcode, data=b''):
         fin = True
@@ -249,7 +280,7 @@ class AsyncWebsocketClient:
         while await self.open():
             count += 1
             try:
-                fin, opcode, data = await self.read_frame()
+                fin, opcode = await self.read_pong()
             # except (ValueError, EOFError) as ex:
             except Exception as ex:
                 await self.open(False)
@@ -286,3 +317,4 @@ class AsyncWebsocketClient:
         else:
             raise TypeError()
         self.write_frame(opcode, buf)
+

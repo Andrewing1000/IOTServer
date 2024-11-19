@@ -81,15 +81,17 @@
     stream.binaryType = "arraybuffer"
 
     stream.onmessage = function(e){
-      if( (e instanceof ArrayBuffer)){
+      if( (e.data instanceof ArrayBuffer)){
+        buffer = e.data
+        dataView = new DataView(buffer)
+
+        roll = dataView.getFloat64(0, false)
+        pitch = dataView.getFloat64(8, false)
+        yaw = dataView.getFloat64(16, false)
         return;
       }
       else{
-        data = e.data
-        data = JSON.parse(data)
-        yaw = data.yaw
-        pitch = data.pitch
-        roll = data.roll
+        console.log("Command")
       }
     }
 
