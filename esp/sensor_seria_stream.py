@@ -84,13 +84,13 @@ async def websocket_client():
         elapsed_time = abs(time.ticks_diff(time.ticks_us(), last_update))
         last_update = time.ticks_us()
         
-        data = struct.pack('>6H3d1Q', *(acc + gyro + mag + (elapsed_time, )))
+        t0 = time.ticks_ms()
+        data = struct.pack('>6i3d1I', *(acc + gyro + mag + (elapsed_time, )))
         await ws.send(data)
 
-#         response = await ws.recv()
-#         data = struct.unpack('>if', response)
-#         print("Response ", data)
-        await asyncio.sleep(0.1)
+        #await ws.recv_pong()
+        print("Latency1: ", abs(time.ticks_diff(t0, time.ticks_ms())))
+        await asyncio.sleep(0.02)
 
 async def main():
     await connect_wifi()

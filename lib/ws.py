@@ -243,6 +243,37 @@ class AsyncWebsocketClient:
                 raise NotImplementedError(opcode)
             else:
                 raise ValueError(opcode)
+            
+    async def recv_pong(self):
+        count = 0
+        while await self.open():
+            count += 1
+            try:
+                fin, opcode, data = await self.read_frame()
+            # except (ValueError, EOFError) as ex:
+            except Exception as ex:
+                await self.open(False)
+                return
+
+            if not fin:
+                raise NotImplementedError()
+
+            if opcode == OP_TEXT:
+                return 
+            elif opcode == OP_BYTES:
+                return
+            elif opcode == OP_CLOSE:
+                await self.open(False)
+                return
+            elif opcode == OP_PONG:
+                continue
+            elif opcode == OP_PING:
+                self.write_frame(OP_PONG, data)
+                return
+            elif opcode == OP_CONT:
+                raise NotImplementedError(opcode)
+            else:
+                raise ValueError(opcode)        
 
     async def send(self, buf):
         if not await self.open():

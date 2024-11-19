@@ -36,7 +36,7 @@
 <body>
   <div id="controls">
     <h3>Controles de Animación para Baqueta 1</h3>
-    <button id="animateX1">Animar X</button>
+    <!-- <button id="animateX1">Animar X</button>
     <button id="animateY1">Animar Y</button>
     <button id="animateZ1">Animar Z</button>
     <button id="animateRotX1">Rotar X</button>
@@ -51,11 +51,48 @@
     <button id="animateRotX2">Rotar X</button>
     <button id="animateRotY2">Rotar Y</button>
     <button id="animateRotZ2">Rotar Z</button>
-    <button id="stop2">Detener Baqueta 2</button>
+    <button id="stop2">Detener Baqueta 2</button> -->
+
+    <button id="home">Home</button>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
+
+    let homeButton = document.getElementById("home")
+    
+    let yaw = 0;
+    let pitch = 0;
+    let roll = 0;
+
+    let yawZero = 0;
+    let pitchZero = 0;
+    let rollZero = 0;
+    homeButton.addEventListener("click", e=>{
+      yawZero = yaw
+      pitchZero = pitch
+      rollZero = roll
+    })
+
+    const BASE_URL = "{{base_url}}"
+    let url = `ws://${BASE_URL}/ws/socket-server/`
+    console.log(url)
+    const stream = new WebSocket(url)
+    stream.binaryType = "arraybuffer"
+
+    stream.onmessage = function(e){
+      if( (e instanceof ArrayBuffer)){
+        return;
+      }
+      else{
+        data = e.data
+        data = JSON.parse(data)
+        yaw = data.yaw
+        pitch = data.pitch
+        roll = data.roll
+      }
+    }
+
     // Escena
     const scene = new THREE.Scene();
 
@@ -79,14 +116,34 @@
 
       const tipGeometry = new THREE.SphereGeometry(0.2, 32, 32);
       const tip = new THREE.Mesh(tipGeometry, baquetaMaterial);
-      tip.position.set(0, 0, 4);
+      tip.name = "tip"
+      tip.position.set(0, 4, 0);
       body.add(tip);
       scene.add(body);
       return body;
     }
 
+    const drumMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+    const drumGeometry = new THREE.CylinderGeometry(5, 5, 2, 32);
+    const drum = new THREE.Mesh(drumGeometry, drumMaterial);
+    drum.position.y = -3;
+    scene.add(drum);
+
     const baqueta1 = createBaqueta();
     const baqueta2 = createBaqueta();
+
+
+    const audioListener = new THREE.AudioListener();
+    camera.add(audioListener);
+
+    const sound = new THREE.Audio(audioListener);
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load('mi-sonido.mp3', function (buffer) {
+      sound.setBuffer(buffer);
+      sound.setLoop(false);
+      sound.setVolume(1.0);
+    });
+
 
     // Posiciones iniciales
     baqueta2.position.x = 5;
@@ -103,15 +160,40 @@
     let animating1 = { x: false, y: false, z: false, rotX: false, rotY: false, rotZ: false };
     let animating2 = { x: false, y: false, z: false, rotX: false, rotY: false, rotZ: false };
 
+    let active = true;
+
     function animate() {
       requestAnimationFrame(animate);
+
+      baqueta1.rotation.x = (pitch-pitchZero) + Math.PI/2;
+      baqueta1.rotation.y = (yaw-yawZero);
+      baqueta1.rotation.z = (roll-rollZero);
+
+      let tip = baqueta1.getObjectByName("tip")
+      const tipGlobalPosition = new THREE.Vector3();
+      tip.getWorldPosition(tipGlobalPosition) 
+      // console.log(drum.position.y + 3)  
+
+      // console.log("tip", tipGlobalPosition.y + 3)
+      // console.log(drum.position.y )
+      if(active){
+        if (tipGlobalPosition.y + 3.5 <= 1) {
+          //if (!sound.isPlaying) sound.play(); 
+          console.log("PUM")
+          active = false;
+        }
+      }
+      else{
+        if (tipGlobalPosition.y + 3.5 > 1) {
+          active = true;
+        }
+      }
+
 
       if (animating1.x) baqueta1.position.x += 0.05;
       if (animating1.y) baqueta1.position.y += 0.05;
       if (animating1.z) baqueta1.position.z += 0.05;
-      if (animating1.rotX) baqueta1.rotation.x += 0.05;
-      if (animating1.rotY) baqueta1.rotation.y += 0.05;
-      if (animating1.rotZ) baqueta1.rotation.z += 0.05;
+      
 
       if (animating2.x) baqueta2.position.x += 0.05;
       if (animating2.y) baqueta2.position.y += 0.05;
@@ -129,21 +211,6 @@
       baqueta[property] = !baqueta[property];
     }
 
-    document.getElementById('animateX1').addEventListener('click', () => toggleAnimation(animating1, 'x'));
-    document.getElementById('animateY1').addEventListener('click', () => toggleAnimation(animating1, 'y'));
-    document.getElementById('animateZ1').addEventListener('click', () => toggleAnimation(animating1, 'z'));
-    document.getElementById('animateRotX1').addEventListener('click', () => toggleAnimation(animating1, 'rotX'));
-    document.getElementById('animateRotY1').addEventListener('click', () => toggleAnimation(animating1, 'rotY'));
-    document.getElementById('animateRotZ1').addEventListener('click', () => toggleAnimation(animating1, 'rotZ'));
-    document.getElementById('stop1').addEventListener('click', () => animating1 = { x: false, y: false, z: false, rotX: false, rotY: false, rotZ: false });
-
-    document.getElementById('animateX2').addEventListener('click', () => toggleAnimation(animating2, 'x'));
-    document.getElementById('animateY2').addEventListener('click', () => toggleAnimation(animating2, 'y'));
-    document.getElementById('animateZ2').addEventListener('click', () => toggleAnimation(animating2, 'z'));
-    document.getElementById('animateRotX2').addEventListener('click', () => toggleAnimation(animating2, 'rotX'));
-    document.getElementById('animateRotY2').addEventListener('click', () => toggleAnimation(animating2, 'rotY'));
-    document.getElementById('animateRotZ2').addEventListener('click', () => toggleAnimation(animating2, 'rotZ'));
-    document.getElementById('stop2').addEventListener('click', () => animating2 = { x: false, y: false, z: false, rotX: false, rotY: false, rotZ: false });
 
     // Responsividad
     window.addEventListener('resize', () => {

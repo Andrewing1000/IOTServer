@@ -38,7 +38,7 @@ class StreamingConsumer(AsyncWebsocketConsumer):
             return  
 
 
-        stream = struct.unpack(">6H3d1Q", bytes_data)
+        stream = struct.unpack(">6i3d1I", bytes_data)
         acc = stream[0:3]
         gyro = stream[3:6]
         mag = stream[6:9]
@@ -47,11 +47,11 @@ class StreamingConsumer(AsyncWebsocketConsumer):
 
 
         self.filter.samplePeriod = period 
-        print(gyro)
+        
         self.filter.update(gyro, acc, mag)
 
         roll, pitch, yaw = self.filter.quaternion.to_euler_angles()
-        #print(yaw)
+        #print(yaw*180/numpy.pi)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -75,5 +75,11 @@ class StreamingConsumer(AsyncWebsocketConsumer):
         yaw = event['yaw']
         pitch = event['pitch']
         roll = event['roll']
+
+        data = {
+            'yaw' : yaw,
+            'pitch': pitch,
+            'roll': roll
+        }
         #g = norm(numpy.array(acc))
-        await self.send(bytes_data=struct.pack(">f", yaw))
+        await self.send(text_data=json.dumps(data))
