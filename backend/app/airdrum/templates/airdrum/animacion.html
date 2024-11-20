@@ -140,7 +140,7 @@
 
     const sound = new THREE.Audio(audioListener);
     const audioLoader = new THREE.AudioLoader();
-    audioLoader.load('mi-sonido.mp3', function (buffer) {
+    audioLoader.load('/static/airdrum/mi-sonido2.mp3', function (buffer) {
       sound.setBuffer(buffer);
       sound.setLoop(false);
       sound.setVolume(1.0);
@@ -164,12 +164,14 @@
 
     let active = true;
 
+    let debounceTime = 200; // Milliseconds
+    let lastPlayTime = 0;
     function animate() {
       requestAnimationFrame(animate);
 
       baqueta1.rotation.x = (pitch-pitchZero) + Math.PI/2;
       baqueta1.rotation.y = (yaw-yawZero);
-      baqueta1.rotation.z = (roll-rollZero);
+      baqueta1.rotation.z = -(roll-rollZero);
 
       let tip = baqueta1.getObjectByName("tip")
       const tipGlobalPosition = new THREE.Vector3();
@@ -180,8 +182,20 @@
       // console.log(drum.position.y )
       if(active){
         if (tipGlobalPosition.y + 3.5 <= 1) {
-          //if (!sound.isPlaying) sound.play(); 
-          console.log("PUM")
+          
+          const currentTime = Date.now();
+          if (currentTime - lastPlayTime > debounceTime) {
+              if (sound && sound.isPlaying) {
+                  sound.stop();
+              }
+              if (sound) {
+                  sound.play();
+                  lastPlayTime = currentTime;
+                  console.log("PUM");
+              }
+          }
+
+
           active = false;
         }
       }

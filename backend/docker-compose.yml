@@ -11,12 +11,13 @@ services:
       - ./app:/app
       - dev-static-data:/vol/web
     command: >
-      sh -c "python manage.py wait_for_db &&
-             python manage.py migrate &&
-            daphne -b 0.0.0.0 -p 8080 app.asgi:application" --websocket_timeout=-1 --ping_interval=30 --ping_timeout=30
+      sh -c "python manage.py wait_for_db && \
+             python manage.py migrate && \
+            python -m uvicorn app.asgi:application --host 0.0.0.0 --port 8080 --ws 'websockets' --ws-ping-interval=1000 --ws-ping-timeout=1000 --workers 1 --loop 'uvloop' --reload"
+  #daphne -b 0.0.0.0 -p 8080 --websocket_timeout=-1  --ping-interval=0 --ping-timeout=1000 app.asgi:application"
   #           python manage.py runserver 0.0.0.0:8080"
   #  --certificate /etc/ssl/certs/cert.pem --key /etc/ssl/private/key.pem"
-
+  
     environment:
       - DB_HOST=db
       - DB_NAME=devdb

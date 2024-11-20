@@ -2,12 +2,13 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import async_to_sync
 from .madgwick.madgwick_ahrs import MadgwickAHRS
-from .madgwick.queue_filter import FIRFilter
+from .madgwick.queue_filter import FilteredBuffer
 
 
 import struct
 import numpy
 import time
+import asyncio
 from numpy.linalg import norm
 class StreamingConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -17,10 +18,10 @@ class StreamingConsumer(AsyncWebsocketConsumer):
         self.gyro_sf = 0.017453292519943
 
         self.filter = MadgwickAHRS(sampleperiod=1/100)
-        self.acc_filter = FIRFilter(cutoff=60)
-        self.gyro_filter = FIRFilter(cutoff=60)
-        self.mag_filter = FIRFilter(cutoff=10)
-    
+        self.acc_filter = FilteredBuffer(cutoff=10, fs=190, type='lowpass',)
+        self.mag_filter = FilteredBuffer(cutoff=10, fs=190, type='lowpass')
+        self.gyro_filter = FilteredBuffer(cutoff=30, fs=190, type='lowpass')
+
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name)
@@ -42,21 +43,25 @@ class StreamingConsumer(AsyncWebsocketConsumer):
             return  
 
 
+        #t0 = time.time()
+
         stream = struct.unpack(">6i3d1I", bytes_data)
         acc = stream[0:3]
         gyro = stream[3:6]
         mag = stream[6:9]
-        period = stream[9]/1e6
-        gyro = tuple(float(value)*self.gyro_sf/self.gyro_so for value in gyro)
+        period_us = stream[9]
+        period = period_us/1e6
 
-        self.acc_filter.update_sampling_frequency(1/period)
-        acc = self.acc_filter.filter(acc)
-        gyro = self.gyro_filter.filter(gyro)
-        mag = self.mag_filter.filter(mag)
+        acc = self.acc_filter.update(acc, period_us)
+        gyro = self.gyro_filter.update(gyro, period_us)
+        mag = self.mag_filter.update(mag, period_us)
+        gyro = tuple(float(value)*self.gyro_sf/self.gyro_so for value in gyro)
 
         self.filter.samplePeriod = period         
         self.filter.update(gyro, acc, mag)
         roll, pitch, yaw = self.filter.quaternion.to_euler_angles()
+
+       #print("Latency ", time.time()-t0)
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -77,11 +82,9 @@ class StreamingConsumer(AsyncWebsocketConsumer):
         )
 
     async def sensor_stream(self, event):
-        #time = event['time']
         yaw = event['yaw']
         pitch = event['pitch']
         roll = event['roll']
 
         data = struct.pack(">3d", roll, pitch, yaw)
-        #g = norm(numpy.array(acc))
         await self.send(bytes_data=data)

@@ -35,10 +35,11 @@ urlpatterns = [
     path('user/', include('user.urls')),
     path('tienda/', include('tienda.urls')),
     path('airdrum/', include('airdrum.urls')),
+    
 ]
 
 if settings.DEBUG:
     urlpatterns += static(
-        settings.MEDIA_URL,
-        document_root=settings.MEDIA_ROOT,
+        settings.STATIC_URL,
+        document_root=settings.STATIC_ROOT,
     )

@@ -214,11 +214,13 @@ AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
 SESSION_COOKIE_AGE = 900
 
-STATIC_URL = '/static/static/'
-MEDIA_URL = '/static/media/'
+STATIC_URL = '/static/'
+#MEDIA_URL = '/static/media/'
 
-MEDIA_ROOT = '/vol/web/media'
-STATIC_ROOT = '/vol/web/static'
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+# MEDIA_ROOT = '/vol/web/media'
+# STATIC_ROOT = '/vol/web/static'
 
 
 
