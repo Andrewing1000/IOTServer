@@ -8,7 +8,7 @@ from machine import I2C, Timer, Pin
 import math
 import struct
 from lib.mpu9250 import MPU9250
-from lib.mpu6500 import MPU6500, ACCEL_FS_SEL_8G, GYRO_FS_SEL_1000DPS
+from lib.mpu6500 import MPU6500, ACCEL_FS_SEL_16G, GYRO_FS_SEL_1000DPS
 import time
 import socket
 
@@ -18,11 +18,12 @@ import socket
 i2c = I2C(1, sda=21, scl=22, freq=400000)
 print(i2c.scan())
 
-sensor6500 = MPU6500(i2c, accel_fs=ACCEL_FS_SEL_8G, gyro_fs=GYRO_FS_SEL_1000DPS)
+sensor6500 = MPU6500(i2c, accel_fs=ACCEL_FS_SEL_16G, gyro_fs=GYRO_FS_SEL_1000DPS)
 sensor = MPU9250(i2c, mpu6500=sensor6500)
 
 sensor.mpu6500._register_char(0x1A, 0x07) #Dectivate lpf gyro
 sensor.mpu6500._register_char(0x1D, 0x08) #Deactivate lpf acc
+sensor.mpu6500._register_char(0x19, 0x01) #Sample divider
 
 sensor.mpu6500._register_char(0x38, 0x01) #Activate DR interrupt
 current_int_pin_cfg = sensor.mpu6500._register_char(0x37) 
@@ -45,8 +46,8 @@ WEBSOCKET_URL = ""
 
 
 pong_rate = 5*1000
-last_update = time.ticks_us();
-last_pong = time.ticks_ms()
+last_update = -1
+last_pong = -1
 
 acc = []
 gyro = []
@@ -83,12 +84,11 @@ async def websocket_client():
     await ws.handshake(WEBSOCKET_URL)
     print("Connected to WebSocket server.")
     
+    last_update = time.ticks_us()
+    last_pong = time.ticks_ms()
     while True:
         #print("Awaiting")
         await new_data.wait()
-        
-        int_status = sensor.mpu6500._register_char(0x3A)
-        sensor.mpu6500._register_char(0x3A, 0x00)
         
         current_time = time.ticks_us()
         elapsed_time = abs(time.ticks_diff(current_time, last_update))
@@ -102,17 +102,19 @@ async def websocket_client():
         data = struct.pack('>6i3d1I', *(acc + gyro + mag + (elapsed_time, )))
         await ws.send(data)
         
+        print("Latency: ", elapsed_time/1000)
+        
         current_time_ms = time.ticks_ms()
         if abs(time.ticks_diff(last_pong, current_time_ms)) > pong_rate:
             #ws.write_frame(OP_PONG)
             await ws.recv()
             last_pong = current_time_ms
             
-        print("Latency: ", abs(time.ticks_diff(t0, time.ticks_ms())))
+        #print("Latency: ", abs(time.ticks_diff(t0, time.ticks_ms())))
         
         int_status = sensor.mpu6500._register_char(0x3A)
         new_data.clear()
-        await asyncio.sleep(0)
+        #await asyncio.sleep(0)
 
 async def main():
     await connect_wifi()

@@ -61,7 +61,7 @@ class StreamingConsumer(AsyncWebsocketConsumer):
         self.filter.update(gyro, acc, mag)
         roll, pitch, yaw = self.filter.quaternion.to_euler_angles()
 
-       #print("Latency ", time.time()-t0)
+        #print("Latency ", time.time()-t0)
 
         await self.channel_layer.group_send(
             self.room_group_name,
