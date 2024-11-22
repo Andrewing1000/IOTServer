@@ -74,6 +74,23 @@
       rollZero = roll
     })
 
+    const scene = new THREE.Scene();
+
+// Cámara
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 15;
+
+    const audioListener = new THREE.AudioListener();
+    camera.add(audioListener);
+
+    const kick_sound = new THREE.Audio(audioListener);
+    const kick_loader = new THREE.AudioLoader();
+    kick_loader.load('/static/airdrum/kick_sound.mp3', function (buffer) {
+      kick_sound.setBuffer(buffer);
+      kick_sound.setLoop(false);
+      kick_sound.setVolume(1.0);
+    });
+
     const BASE_URL = "{{base_url}}"
     let url = `ws://${BASE_URL}/ws/socket-server/`
     console.log(url)
@@ -90,17 +107,26 @@
         yaw = dataView.getFloat64(16, false)
         return;
       }
+      else if(typeof e.data == "string"){
+        let data = JSON.parse(e.data)
+        if(data.command == "kick"){
+          if (kick_sound && kick_sound.isPlaying) {
+                  kick_sound.stop();
+              }
+              if (kick_sound) {
+                  kick_sound.play();
+              }
+        }
+      }
       else{
+        console.log((e.data instanceof String))
+        console.log(typeof e.data)
         console.log("Command")
       }
     }
 
     // Escena
-    const scene = new THREE.Scene();
 
-    // Cámara
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 15;
 
     // Renderizador
     const renderer = new THREE.WebGLRenderer();
@@ -135,8 +161,7 @@
     const baqueta2 = createBaqueta();
 
 
-    const audioListener = new THREE.AudioListener();
-    camera.add(audioListener);
+
 
     const sound = new THREE.Audio(audioListener);
     const audioLoader = new THREE.AudioLoader();
@@ -164,7 +189,7 @@
 
     let active = true;
 
-    let debounceTime = 200; // Milliseconds
+    let debounceTime = 100; // Milliseconds
     let lastPlayTime = 0;
     function animate() {
       requestAnimationFrame(animate);

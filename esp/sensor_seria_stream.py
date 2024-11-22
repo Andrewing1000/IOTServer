@@ -53,13 +53,30 @@ acc = []
 gyro = []
 mag = []
 
-# print("Calibrating Gyro...")
-# sensor.mpu6500.calibrate()
-# print("Gyro Calibrated")
+last_click = 0
+
+
+pedal = Pin(32, Pin.IN, pull=Pin.PULL_UP)
+kick_hit = asyncio.Event()
+def pedal_on(pin):
+    global last_click, kick_hit
+    current_time = time.ticks_ms()
+    if time.ticks_diff(current_time, last_click) < 200:
+        return
+    last_click = current_time
+    print("Pedal set")
+    kick_hit.set()
+
+pedal.irq(trigger = Pin.IRQ_FALLING, handler=pedal_on)
+
+
+print("Calibrating Gyro...")
+sensor.mpu6500.calibrate()
+print("Gyro Calibrated")
 
 
 # print("Calibrating Magnetometer...")
-# sensor.ak8963.calibrate()
+# sensor.ak8963.calibrate(100)
 # print("Magnetometer Calibrated")
 
 async def connect_wifi():
@@ -77,13 +94,15 @@ async def connect_wifi():
     WEBSOCKET_URL = f"ws://{addr}:8080/ws/socket-server/"        
     print("Connected to Wi-Fi:", wlan.ifconfig())
 
+ws = AsyncWebsocketClient()
 async def websocket_client():
-    global last_update, last_pong, acc, gyro, mag
-    ws = AsyncWebsocketClient()
+    global last_update, last_pong, acc, gyro, mag, ws
     print("Connecting to WebSocket " , WEBSOCKET_URL)
     await ws.handshake(WEBSOCKET_URL)
     print("Connected to WebSocket server.")
     
+    
+async def imu_refresh():
     last_update = time.ticks_us()
     last_pong = time.ticks_ms()
     while True:
@@ -102,7 +121,7 @@ async def websocket_client():
         data = struct.pack('>6i3d1I', *(acc + gyro + mag + (elapsed_time, )))
         await ws.send(data)
         
-        print("Latency: ", elapsed_time/1000)
+#         print("Latency: ", elapsed_time/1000)
         
         current_time_ms = time.ticks_ms()
         if abs(time.ticks_diff(last_pong, current_time_ms)) > pong_rate:
@@ -114,11 +133,25 @@ async def websocket_client():
         
         int_status = sensor.mpu6500._register_char(0x3A)
         new_data.clear()
-        #await asyncio.sleep(0)
+        await asyncio.sleep(0)
+
+
+async def kick_refresh():
+    global kick_hit
+    while(True):
+        await kick_hit.wait()
+        if ws.sock:
+            data = json.dumps({"command": "kick"})
+            await ws.send(data)
+            print("Sent")
+        kick_hit.clear()
+        await asyncio.sleep(0.2)
+        
 
 async def main():
     await connect_wifi()
-    await asyncio.gather(websocket_client())
+    await websocket_client()
+    await asyncio.gather(imu_refresh(), kick_refresh())
 
 try:
     asyncio.run(main())

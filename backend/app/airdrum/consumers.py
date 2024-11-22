@@ -32,7 +32,8 @@ class StreamingConsumer(AsyncWebsocketConsumer):
 
         if text_data:
             data = json.loads(text_data)
-            message = data['command']
+            message = data.get('command', None)
+            if not message: return
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -58,7 +59,8 @@ class StreamingConsumer(AsyncWebsocketConsumer):
         gyro = tuple(float(value)*self.gyro_sf/self.gyro_so for value in gyro)
 
         self.filter.samplePeriod = period         
-        self.filter.update(gyro, acc, mag)
+        #self.filter.update(gyro, acc, mag)
+        self.filter.update_imu(gyro, acc)
         roll, pitch, yaw = self.filter.quaternion.to_euler_angles()
 
         #print("Latency ", time.time()-t0)

@@ -6,13 +6,13 @@ from collections import deque
 from typing import Literal
 
 class FilteredBuffer:
-    def __init__(self, cutoff, size=200, fs = 190,
+    def __init__(self, cutoff, size=300, fs = 190,
                 type: Literal['lowpass', 'highpass'] ='lowpass'):
         self.cutoff = cutoff
         self.size = size
         self.fs = fs
         self.buffer = deque(maxlen=size)
-        self.fir_filter = firwin(numtaps=61, cutoff=cutoff, pass_zero=type, fs=fs)
+        self.fir_filter = firwin(numtaps=21, cutoff=cutoff, pass_zero=type, fs=fs)
         #self.fir_filter = savgol_coeffs(window_length=31, polyorder=4, deriv=2, )
         self.last_ts = 0
 
@@ -23,7 +23,7 @@ class FilteredBuffer:
 
         #return point[1:]
 
-        if self.last_ts/(1e6/self.fs) < 200:
+        if self.last_ts/(1e6/self.fs) < 300:
             return point
 
         #print(self.last_ts)
@@ -32,11 +32,11 @@ class FilteredBuffer:
         sampled_values = sampled_data[:, 1:]
 
         #print(sampled_time)
-        interpolator = interp1d(sampled_time, sampled_values, kind='cubic', axis=0)
+        interpolator = interp1d(sampled_time, sampled_values, kind='linear', axis=0)
         uniform_time = np.arange(sampled_time.min(), self.last_ts, step=1e6/self.fs)
         uniform_sampled = interpolator(uniform_time)
         
-        #return savgol_filter(uniform_sampled, window_length=200, polyorder=3, axis=0, mode='interp')[-1]
+        #return savgol_filter(uniform_sampled, window_length=300, polyorder=3, axis=0, mode='interp')[-1]
         #return filtfilt(self.fir_filter, [1.0], uniform_sampled, axis=0)[-1]
-        return filtfilt(self.fir_filter, [1.0], uniform_sampled, axis=0, )[-1]
+        return lfilter(self.fir_filter, [1.0], uniform_sampled, axis=0, )[-1]
 
