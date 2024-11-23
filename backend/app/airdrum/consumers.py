@@ -59,8 +59,8 @@ class StreamingConsumer(AsyncWebsocketConsumer):
         gyro = tuple(float(value)*self.gyro_sf/self.gyro_so for value in gyro)
 
         self.filter.samplePeriod = period         
-        #self.filter.update(gyro, acc, mag)
-        self.filter.update_imu(gyro, acc)
+        self.filter.update(gyro, acc, mag)
+        #self.filter.update_imu(gyro, acc)
         roll, pitch, yaw = self.filter.quaternion.to_euler_angles()
 
         #print("Latency ", time.time()-t0)

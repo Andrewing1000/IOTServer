@@ -9,3 +9,6 @@ django-sslserver
 django-filter
 psycopg2-binary
 channels
+numpy
+scipy
+uvicorn[standard]

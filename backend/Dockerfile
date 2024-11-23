@@ -30,8 +30,5 @@ RUN python -m venv /py && \
     chmod -R 755 /vol
 
 ENV PATH="/py/bin:$PATH"
-RUN pip install daphne
-RUN pip install numpy
-RUN python -m pip install uvicorn[standard]
-RUN pip install scipy
+#RUN python -m pip install uvicorn[standard]
 USER django-user
