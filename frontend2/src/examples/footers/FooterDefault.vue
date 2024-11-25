@@ -123,7 +123,7 @@ defineProps({
 });
 </script>
 <template>
-  <footer class="footer pt-2 mt-2">
+  <footer class="footer ">
     <div class="container">
       <div class="row">
         <div class="col-md-3 mb-4 ms-auto">
@@ -131,7 +131,7 @@ defineProps({
             <a :href="brand.route">
               <img :src="brand.logo" class="mb-3 footer-logo" alt="main_logo" />
             </a>
-            <h6 class="font-weight-bolder mb-4">AirDrum System</h6>
+            <h6 class="font-weight-bolder ">AirDrum System</h6>
           </div>
           <div>
             
@@ -144,10 +144,7 @@ defineProps({
             <p class="text-dark my-4 text-sm font-weight-normal">
               All rights reserved. Copyright ©
               {{ new Date().getFullYear() }}
-              Material Kit by
-              <a href="https://www.creative-tim.com" target="_blank"
-                >Creative Tim</a
-              >.
+              AirDrum system
             </p>
           </div>
         </div>
