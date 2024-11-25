@@ -170,7 +170,7 @@ watch(
                 :class="getTextColor()"
                 >dashboard</i
               >
-              Pages
+              Paginas
               <img
                 :src="getArrowColor()"
                 alt="down-arrow"
@@ -193,19 +193,19 @@ watch(
                       <div
                         class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-1"
                       >
-                        Landing Pages
+                        Todas las paginas
                       </div>
                       <RouterLink
                         :to="{ name: 'about' }"
                         class="dropdown-item border-radius-md"
                       >
-                        <span>About Us</span>
+                        <span>Porque usar AirDrum?</span>
                       </RouterLink>
                       <RouterLink
                         :to="{ name: 'interface' }"
                         class="dropdown-item border-radius-md"
                       >
-                        <span>Interfaz</span>
+                        <span>Prueba demo</span>
                       </RouterLink>
                       <!-- <RouterLink
                         :to="{ name: 'author' }"

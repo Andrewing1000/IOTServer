@@ -45,7 +45,13 @@ import CenteredBlogCard from "../../../../examples/cards/blogCards/CenteredBlogC
             description="Explora las posibilidades que Airdrum ofrece para mejorar tu experiencia musical, desde crear ritmos hasta compartirlos con otros usuarios."
           />
         </div>
+      
       </div>
+      
+    </div>
+    <div><br>
+      <h2>Puedes ver la intencidad de tus movimientos a travez de un dashboard:</h2>
+      <img src="./airDrumDashborar.png" alt="Dashboard de AirDrum" style="max-width: 100%; height: auto; margin-top: 1rem; margin-left: 250px;">
     </div>
   </section>
 </template>

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue"; // Add 'ref' here
 
 //example components
 import NavbarDefault from "../..//examples/navbars/NavbarDefault.vue";
@@ -30,6 +30,20 @@ import logoReact from "@/assets/img/logos/react.jpg";
 import logoSketch from "@/assets/img/logos/sketch.jpg";
 
 //hooks
+// Estado para controlar el modal
+const showModal = ref(false);
+
+// Mostrar el modal
+const openModal = () => {
+  showModal.value = true;
+};
+
+// Ocultar el modal
+const closeModal = () => {
+  showModal.value = false;
+};
+
+// Estilos iniciales de tu página
 const body = document.getElementsByTagName("body")[0];
 onMounted(() => {
   body.classList.add("presentation-page");
@@ -158,8 +172,28 @@ onUnmounted(() => {
                 <a
                   href="#"
                   class="btn btn-sm mb-0 bg-gradient-success px-5 py-3 mt-4"
-                  >Pruebalo ahora</a
-                >
+                  @click.prevent="openModal"
+                >Pruebalo ahora</a>
+
+                <!-- Modal -->
+                <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+                  <div class="modal-content">
+                    <div class="modal-card">
+                      <div class="modal-header">
+                        <h2 class="modal-title">Suscripcion mensual</h2>
+                        <p class="modal-price">10 Bs</p>
+                      </div>
+                      <div class="modal-body">
+                        <p class="modal-description">
+                          Con tu suscripcion mensual podras tener acceso a nuestro servicio de monitoreo de datos en tiempo real. Aprenderas a tocar aun mejor la bateria y mejorar ás tu técnica.
+                        </p>
+                      </div>
+                      <div class="modal-footer">
+                        <button class="btn-buy-now" @click="closeModal">Compra ahora</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -167,5 +201,105 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
-  <DefaultFooter  />
+  <DefaultFooter />
 </template>
+
+<style scoped>
+.modal-fade-enter-active, .modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.modal-fade-enter, .modal-fade-leave-to {
+  opacity: 0;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Modal Content */
+.modal-content {
+  background-color: #fff;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.4s ease-in-out;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Modal Card */
+.modal-card {
+  padding: 20px;
+}
+
+/* Modal Header */
+.modal-header {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.modal-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-price {
+  font-size: 22px;
+  font-weight: 600;
+  color: #2ecc71;
+}
+
+/* Modal Body */
+.modal-body {
+  text-align: center;
+  font-size: 16px;
+  color: #777;
+  margin-bottom: 20px;
+}
+
+/* Modal Footer */
+.modal-footer {
+  text-align: center;
+}
+
+.btn-buy-now {
+  background: linear-gradient(45deg, #2ecc71, #27ae60);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-buy-now:hover {
+  background: linear-gradient(45deg, #27ae60, #2ecc71);
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideIn {
+  0% { transform: translateY(-50px); }
+  100% { transform: translateY(0); }
+}
+</style>
