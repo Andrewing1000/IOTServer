@@ -6,7 +6,7 @@ import DefaultNavbar from "../../../examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "../../../examples/footers/FooterDefault.vue";
 
 //image
-import bg0 from "@/assets/img/bg9.jpg";
+import bg0 from "@/assets/img/bateriafondo.png";
 
 //dep
 import Typed from "typed.js";
@@ -71,7 +71,7 @@ onUnmounted(() => {
               Airdrum está revolucionando la forma en que interactuamos con la música, permitiéndote crear y tocar ritmos solo con las manos en el aire. No necesitas instrumentos, solo tu creatividad y energía.
 
             </p>
-            <h6 class="text-white mb-2 mt-5">Find us on</h6>
+            <h6 class="text-white mb-2 mt-5"></h6>
             <div class="d-flex justify-content-center">
               <a href="javascript:;"
                 ><i class="fab fa-facebook text-lg text-white me-4"></i
