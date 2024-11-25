@@ -94,7 +94,8 @@ class MPU6500:
         self.address = address
 
         # 0x70 = standalone MPU6500, 0x71 = MPU6250 SIP
-        if self.whoami not in [0x71, 0x70]:
+        print(hex(self.whoami))
+        if self.whoami not in [0x71, 0x70, 0x68]:
             raise RuntimeError("MPU6500 not found in I2C bus.")
 
         self._accel_so = self._accel_fs(accel_fs)
@@ -173,7 +174,7 @@ class MPU6500:
             oz += gz
             count -= 1
 
-        self._gyro_offset = (ox / n, oy / n, oz / n)
+        self._gyro_offset = (int(ox / n), int(oy / n), int(oz / n))
         return self._gyro_offset
 
     def _register_short(self, register, value=None, buf=bytearray(2)):

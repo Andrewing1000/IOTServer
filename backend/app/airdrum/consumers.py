@@ -13,7 +13,7 @@ from numpy.linalg import norm
 class StreamingConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_group_name = 'test'
-        self.acc_so = 4096
+        self.acc_so = 42048
         self.gyro_so = 32.8
         self.gyro_sf = 0.017453292519943
 
@@ -53,14 +53,19 @@ class StreamingConsumer(AsyncWebsocketConsumer):
         period_us = stream[9]
         period = period_us/1e6
 
-        acc = self.acc_filter.update(acc, period_us)
-        gyro = self.gyro_filter.update(gyro, period_us)
-        mag = self.mag_filter.update(mag, period_us)
-        gyro = tuple(float(value)*self.gyro_sf/self.gyro_so for value in gyro)
+        self.filter.samplePeriod = period
 
-        self.filter.samplePeriod = period         
-        #self.filter.update(gyro, acc, mag)
-        self.filter.update_imu(gyro, acc)
+        mag_norm = numpy.linalg.norm(mag)
+        if(mag_norm < 1):
+            gyro = tuple(float(value)*self.gyro_sf/self.gyro_so for value in gyro)
+            self.filter.update_imu(gyro, acc)
+        else:
+            acc = self.acc_filter.update(acc, period_us)
+            gyro = self.gyro_filter.update(gyro, period_us)
+            mag = self.mag_filter.update(mag, period_us)
+            gyro = tuple(float(value)*self.gyro_sf/self.gyro_so for value in gyro)
+            self.filter.update(gyro, acc, mag)
+
         roll, pitch, yaw = self.filter.quaternion.to_euler_angles()
 
         #print("Latency ", time.time()-t0)

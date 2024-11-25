@@ -65,7 +65,7 @@ class AK8963:
     """Class which provides interface to AK8963 magnetometer."""
     def __init__(
         self, i2c, address=0x0c,
-        mode=MODE_CONTINOUS_MEASURE_1, output=OUTPUT_16_BIT,
+        mode=MODE_CONTINOUS_MEASURE_2, output=OUTPUT_16_BIT,
         offset=(0, 0, 0), scale=(1, 1, 1)
     ):
         self.i2c = i2c
