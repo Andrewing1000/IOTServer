@@ -14,12 +14,17 @@
           </button>
         </div>
         <div class="section-title">Controls & Player</div>
-        <Controls class="controls-section" />
+        <Controls class="controls-section" 
+          @sound-played="onSoundPlayed" 
+          @kick-played="onKickPlayed"
+        />
+        <!-- We assume Controls emits events 'sound-played' and 'kick-played' 
+             whenever a sound is played in Controls.vue -->
       </aside>
       <div id="scene-container" class="scene-container"></div>
     </div>
 
-    <footer class="bottom-bar">
+    <footer class="bottom-bar" :class="{recording:isRecording}">
       <button class="btn-bottom record" @click="toggleRecording" :title="isRecording ? 'Stop Recording' : 'Record'">
         <i class="fa" :class="isRecording ? 'fa-stop-circle' : 'fa-circle'"></i>
       </button>
@@ -36,7 +41,6 @@
     <transition name="fade">
       <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
         <div class="modal-content">
-          <!-- Tabs for Switching Between Sound Selection and Management -->
           <div class="modal-tabs">
             <button 
               class="tab-btn"
@@ -49,7 +53,6 @@
           </div>
 
           <div class="modal-body">
-            <!-- Selection Tab -->
             <div v-show="activeTab==='selection'" class="tab-section">
               <h3>Sound Selection</h3>
               <div class="form-group">
@@ -66,7 +69,6 @@
               </div>
             </div>
 
-            <!-- Management Tab -->
             <div v-show="activeTab==='management'" class="tab-section">
               <h3>Upload New Sound</h3>
               <form @submit.prevent="postSound" class="upload-form">
@@ -116,7 +118,7 @@ import Controls from './sections/controls.vue';
 import { setupSocket } from './utils/socket';
 import { Howl } from 'howler';
 import api from './utils/api';
-
+import './App.css';
 import mainSoundUrl from '@/assets/audio/mi-sonido2.mp3';
 import kickSoundUrl from '@/assets/audio/kick_sound.mp3';
 
@@ -141,6 +143,8 @@ export default {
       renderer: null,
       active: true,
       isRecording: false,
+      recordingStartTime: null,
+      recordedEvents: [], // store tuples (timestamp, 1.0, sound_id)
       defaultSounds: [
         { name: 'Default Snare', sound: mainSoundUrl },
         { name: 'Default Kick', sound: kickSoundUrl }
@@ -155,7 +159,7 @@ export default {
       selectedFile: null,
       serverResponse: null,
       showModal: false,
-      activeTab: 'selection' // New state to manage which tab is active
+      activeTab: 'selection'
     };
   },
   computed: {
@@ -296,15 +300,94 @@ export default {
     playSound() {
       if (this.sound) {
         this.sound.play();
+        // If recording, record event
+        this.recordEventForSound(this.allSounds[this.selectedSoundIndex]);
       }
     },
     playKickSound() {
       if (this.kickSound) {
         this.kickSound.play();
+        // If recording, record event
+        this.recordEventForSound(this.allSounds[this.selectedKickSoundIndex]);
       }
     },
     toggleRecording() {
-      this.isRecording = !this.isRecording;
+      if (this.isRecording) {
+        // Stopping recording
+        this.isRecording = false;
+        // Prompt for track name
+        const trackName = prompt("Enter a name for this track:");
+        if (trackName) {
+          this.saveRecording(trackName);
+        }
+      } else {
+        // Starting recording
+        this.isRecording = true;
+        this.recordingStartTime = performance.now();
+        this.recordedEvents = [];
+      }
+    },
+    recordEventForSound(soundObj) {
+      if (!this.isRecording) return;
+      const timestamp = (performance.now() - this.recordingStartTime) / 1000.0;
+      const fixedID = soundObj.id !== undefined ? soundObj.id : 1; // default to 1 if no id
+      // Tuple: (timestamp(float), 1.0, sound_id(int))
+      this.recordedEvents.push([timestamp, 1.0, fixedID]);
+    },
+    saveRecording(trackName) {
+      // Convert recordedEvents to binary
+      const length = this.recordedEvents.length;
+      // Each event: 2 floats + 1 int = (4 + 4 + 4) = 12 bytes per event
+      // Plus 4 bytes for length
+      const bufferSize = 4 + (length * 12);
+      const buffer = new ArrayBuffer(bufferSize);
+      const view = new DataView(buffer);
+
+      let offset = 0;
+      // Write length (unsigned int, big-endian)
+      view.setUint32(offset, length, false); // false = big-endian
+      offset += 4;
+
+      for (let i = 0; i < length; i++) {
+        const [timestamp, constantOne, sound_id] = this.recordedEvents[i];
+        // Timestamp float big-endian
+        this.writeFloatBE(view, timestamp, offset); offset += 4;
+        // ConstantOne float big-endian
+        this.writeFloatBE(view, constantOne, offset); offset += 4;
+        // sound_id unsigned int big-endian
+        this.writeUint32BE(view, sound_id, offset); offset += 4;
+      }
+
+      const blob = new Blob([buffer], { type: 'application/octet-stream' });
+
+      // Upload to /airdrum/track/
+      const formData = new FormData();
+      formData.append('name', trackName);
+      formData.append('file', blob);
+
+      api.post('/airdrum/track/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }).then(response => {
+        console.log("Track saved:", response.data);
+      }).catch(err => {
+        console.error("Error saving track:", err);
+      });
+    },
+    writeFloatBE(view, value, offset) {
+      // Helper to write float big-endian
+      const tempBuffer = new ArrayBuffer(4);
+      const tempView = new DataView(tempBuffer);
+      tempView.setFloat32(0, value, false);
+      view.setUint8(offset, tempView.getUint8(0));
+      view.setUint8(offset+1, tempView.getUint8(1));
+      view.setUint8(offset+2, tempView.getUint8(2));
+      view.setUint8(offset+3, tempView.getUint8(3));
+    },
+    writeUint32BE(view, value, offset) {
+      // Helper to write uint32 big-endian
+      view.setUint32(offset, value, false);
     },
     setupAnimationLoop(scene, camera, renderer) {
       const animate = () => {
@@ -323,6 +406,8 @@ export default {
       tip.getWorldPosition(tipGlobalPosition);
       if (this.active && tipGlobalPosition.y <= -1) {
         if (this.sound) this.sound.play();
+        // If recording, record event
+        if (this.isRecording) this.recordEventForSound(this.allSounds[this.selectedSoundIndex]);
         this.active = false;
       } else if (!this.active && tipGlobalPosition.y > -1) {
         this.active = true;
@@ -354,12 +439,15 @@ export default {
           this.yaw = dataView.getFloat64(16, false);
         } else {
           const data = JSON.parse(e.data);
-          if (data.command === "kick" && this.kickSound) this.kickSound.play();
+          if (data.command === "kick" && this.kickSound) {
+            this.kickSound.play();
+            // If recording, record the kick event
+            if (this.isRecording) this.recordEventForSound(this.allSounds[this.selectedKickSoundIndex]);
+          }
         }
       };
     },
     assignSelectedSounds() {
-      // main sound
       if (this.allSounds[this.selectedSoundIndex]) {
         const mainSoundUrl = this.allSounds[this.selectedSoundIndex].sound;
         this.sound = new Howl({
@@ -370,7 +458,6 @@ export default {
           preload: true
         });
       }
-      // kick sound
       if (this.allSounds[this.selectedKickSoundIndex]) {
         const kickSoundUrl = this.allSounds[this.selectedKickSoundIndex].sound;
         this.kickSound = new Howl({
@@ -381,369 +468,17 @@ export default {
           preload: true
         });
       }
+    },
+    onSoundPlayed() {
+      // If the Controls component emits when a sound is played
+      // This can be a generic callback if needed
+      if (this.isRecording) this.recordEventForSound(this.allSounds[this.selectedSoundIndex]);
+    },
+    onKickPlayed() {
+      // If Controls emits when a kick sound is played
+      if (this.isRecording) this.recordEventForSound(this.allSounds[this.selectedKickSoundIndex]);
     }
   },
 };
 </script>
 
-<style scoped>
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
-
-.app-container {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #1e1e1e;
-  overflow: hidden;
-  font-family: sans-serif;
-  color: #ccc;
-}
-
-.top-navbar {
-  flex: 0 0 60px;
-  background: #2c2c2c;
-  border-bottom: 1px solid #333;
-  z-index: 10;
-}
-
-.main-content {
-  flex: 1 1 auto;
-  display: flex;
-  overflow: hidden;
-}
-
-.left-panel {
-  flex: 0 0 400px;
-  background: #2c2c2c;
-  border-right: 1px solid #333;
-  padding: 20px;
-  box-sizing: border-box;
-  overflow-y: auto;
-}
-
-.nav-icons {
-  display: flex;
-  gap:10px;
-  margin-bottom:20px;
-}
-
-.icon-nav {
-  width:40px;
-  height:40px;
-  border:none;
-  background:#3a3a3a;
-  border-radius:4px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#eee;
-  cursor:pointer;
-  font-size:16px;
-  transition: background 0.2s;
-}
-.icon-nav:hover {
-  background:#4a4a4a;
-}
-
-.section-title {
-  margin-top:20px;
-  margin-bottom:10px;
-  font-size:14px;
-  color:#aaa;
-  text-transform:uppercase;
-  letter-spacing:1px;
-}
-
-.controls-section {
-  margin-bottom:20px;
-}
-
-.scene-container {
-  flex: 1;
-  position: relative;
-  background: #1e1e1e;
-  overflow: hidden;
-}
-
-.scene-container canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.bottom-bar {
-  flex: 0 0 80px;
-  background: #2c2c2c;
-  border-top:1px solid #333;
-  box-sizing: border-box;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  padding:10px 20px;
-}
-
-.btn-bottom {
-  width:40px; height:40px;
-  border:none;
-  border-radius:4px;
-  background:#3a3a3a;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#eee;
-  cursor:pointer;
-  font-size:18px;
-  transition: background 0.2s;
-}
-
-.btn-bottom:hover {
-  background:#4a4a4a;
-}
-
-.record {
-  color:#e74c3c;
-}
-.record:hover {
-  background:#5a5a5a;
-}
-
-.action {
-  color:#4a90e2;
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity .3s;
-}
-.fade-enter, .fade-leave-to {
-  opacity: 0;
-}
-
-.modal-overlay {
-  position: fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.6);
-  z-index:9999;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  padding:20px;
-  box-sizing:border-box;
-}
-
-.modal-content {
-  background:#2c2c2c;
-  border:1px solid #444;
-  border-radius:8px;
-  width:400px;
-  max-width:90%;
-  display:flex;
-  flex-direction:column;
-  color:#ccc;
-  font-size:14px;
-  max-height:80vh; /* limit height */
-  overflow:hidden; /* prevent overflow outside */
-}
-
-.modal-tabs {
-  display:flex;
-  border-bottom:1px solid #444;
-}
-
-.tab-btn {
-  flex:1;
-  background:none;
-  border:none;
-  padding:10px;
-  text-align:center;
-  color:#aaa;
-  font-size:14px;
-  cursor:pointer;
-  transition:background 0.2s, color 0.2s;
-}
-
-.tab-btn:hover {
-  background:#3a3a3a;
-}
-
-.tab-btn.active {
-  color:#fff;
-  background:#3a3a3a;
-  font-weight:bold;
-}
-
-.modal-body {
-  flex:1;
-  overflow:auto;
-  padding:15px;
-  display:flex;
-  flex-direction:column;
-  gap:20px;
-}
-
-.tab-section h3 {
-  margin-top:0;
-  margin-bottom:10px;
-  color:#fff;
-  font-size:15px;
-}
-
-.form-group,
-.form-group-inline {
-  margin-bottom:10px;
-  display:flex;
-  flex-direction:column;
-  color:#ccc;
-  font-size:13px;
-}
-
-.form-group-inline {
-  flex-direction:row;
-  align-items:center;
-  gap:5px;
-}
-
-input[type="text"],
-input[type="file"],
-select {
-  width:100%;
-  padding:8px;
-  border:1px solid #555;
-  border-radius:4px;
-  margin-bottom:10px;
-  box-sizing:border-box;
-  background:#333;
-  color:#ccc;
-  font-size:13px;
-}
-
-input[type="checkbox"] {
-  margin-right:5px;
-}
-
-.submit-btn {
-  background:#27ae60;
-  color:#fff;
-  border:none;
-  padding:8px 12px;
-  border-radius:4px;
-  font-size:14px;
-  cursor:pointer;
-  transition:background 0.2s;
-  width:100%;
-  text-align:center;
-}
-
-.submit-btn:hover {
-  background:#1e8449;
-}
-
-.response-text {
-  margin-top:10px;
-  color:#2ecc71;
-  font-size:13px;
-}
-
-.uploaded-list {
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-.uploaded-item {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  background:#3a3a3a;
-  padding:8px;
-  border-radius:4px;
-}
-
-.sound-name {
-  font-size:13px;
-  color:#fff;
-}
-
-.delete-btn {
-  background:#e74c3c;
-  color:#fff;
-  border:none;
-  padding:4px 8px;
-  border-radius:4px;
-  font-size:13px;
-  cursor:pointer;
-  transition: background 0.2s;
-}
-
-.delete-btn:hover {
-  background:#c0392b;
-}
-
-.no-sounds {
-  font-size:13px;
-  color:#888;
-  font-style:italic;
-}
-
-.modal-actions {
-  border-top:1px solid #444;
-  padding:10px;
-  display:flex;
-  justify-content:flex-end;
-}
-
-.close-btn {
-  background:#7f8c8d;
-  color:#fff;
-  border:none;
-  padding:8px 12px;
-  border-radius:4px;
-  font-size:14px;
-  cursor:pointer;
-  transition:background 0.2s;
-  display:flex;
-  align-items:center;
-  gap:5px;
-}
-
-.close-btn:hover {
-  background:#707b7c;
-}
-
-@media (max-width: 768px) {
-  .left-panel {
-    width:100%;
-    border-right:none;
-    border-bottom:1px solid #333;
-  }
-
-  .main-content {
-    flex-direction:column;
-  }
-
-  .scene-container {
-    height: calc(100vh - 60px - 80px);
-  }
-
-  .bottom-bar {
-    flex-wrap:wrap;
-    justify-content:center;
-  }
-}
-
-@media (max-width:480px) {
-  .modal-content {
-    width:90%;
-    padding:0;
-  }
-
-  .submit-btn, .close-btn {
-    width:100%;
-  }
-}
-</style>
