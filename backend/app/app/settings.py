@@ -110,6 +110,17 @@ DATABASES = {
 }
 
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'HOST' : "localhost",
+#         'NAME' : "devdb",
+#         'USER' : "devuser",
+#         'PASSWORD' : "changeme",
+#     }
+# }
+
+
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
@@ -214,15 +225,11 @@ AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
 SESSION_COOKIE_AGE = 900
 
-STATIC_URL = '/static/'
-#MEDIA_URL = '/static/media/'
+STATIC_URL = '/static/static/'
+MEDIA_URL = '/static/media/'
 
-
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-# MEDIA_ROOT = '/vol/web/media'
-# STATIC_ROOT = '/vol/web/static'
-
-
+MEDIA_ROOT = '/vol/web/media'
+STATIC_ROOT = '/vol/web/static'
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
