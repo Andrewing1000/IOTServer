@@ -74,6 +74,13 @@
   </script>
   
   <style scoped>
+.LoginContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #71a1d0;
+}
   .container {
     background-color: white;
     padding: 20px;
