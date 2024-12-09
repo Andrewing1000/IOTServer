@@ -8,6 +8,7 @@ import Login from "../views/Login.vue"; // Import Login component
 import Register from "../views/Register.vue"; // Import Register component
 import Admin from "../views/Admin.vue"; // Import Admin component (to be created)
 import Dashboard from "../views/Dashboard.vue";
+import Aprende from "../views/Aprende.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -47,6 +48,11 @@ const router = createRouter({
       path: "/dashboard",
       name: "dashboard",
       component: Dashboard,
+    },
+    {
+      path: "/aprende",
+      name: "aprender",
+      component: Aprende,
     },
     // Add more routes as needed
   ],

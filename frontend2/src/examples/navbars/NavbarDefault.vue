@@ -171,6 +171,7 @@ watch(
                 >dashboard</i
               >
               Paginas
+
               <img
                 :src="getArrowColor()"
                 alt="down-arrow"
@@ -207,12 +208,24 @@ watch(
                       >
                         <span>Prueba demo</span>
                       </RouterLink>
-                      <!-- <RouterLink
-                        :to="{ name: 'author' }"
+                      <RouterLink
+                        :to="{ name: 'dashboard' }"
                         class="dropdown-item border-radius-md"
                       >
-                        <span>Author</span>
-                      </RouterLink> -->
+                        <span>Dashboard</span>
+                      </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'login' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>Login</span>
+                      </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'aprender' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>Enseñanza</span>
+                      </RouterLink>
                     </div>
                   </div>
                 </div>

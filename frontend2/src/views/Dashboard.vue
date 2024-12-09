@@ -1,14 +1,21 @@
 <template>
-  <DefaultNavbar
-    :action="{ route: 'javascript:;', color: 'btn-white' }"
-    class="top-navbar"
-  />
+  <div class="container position-sticky z-index-sticky top-0">
+    <div class="row">
+      <div class="col-12">
+        <DefaultNavbar :sticky="true" />
+      </div>
+    </div>
+  </div>
+
   <div class="dashboardContainer">
     <b-container fluid class="p-3">
       <b-row>
         <b-col>
           <b-card class="text-center animated-card">
             <b-card-header>
+              <br />
+              <br />
+              <br />
               <h3 class="header-title">
                 Visualización de Datos en Tiempo Real
               </h3>
