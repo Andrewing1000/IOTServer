@@ -85,7 +85,7 @@
 
     const kick_sound = new THREE.Audio(audioListener);
     const kick_loader = new THREE.AudioLoader();
-    kick_loader.load('/static/airdrum/mi-sonido.mp3', function (buffer) {
+    kick_loader.load('/static/airdrum/kick_sound.mp3', function (buffer) {
       kick_sound.setBuffer(buffer);
       kick_sound.setLoop(false);
       kick_sound.setVolume(1.0);
