@@ -28,10 +28,10 @@
       <button class="btn-bottom record" @click="toggleRecording" :title="isRecording ? 'Stop Recording' : 'Record'">
         <i class="fa" :class="isRecording ? 'fa-stop-circle' : 'fa-circle'"></i>
       </button>
-      <button class="btn-bottom action" @click="playSound" :title="'Play Snare'">
+      <button class="btn-bottom action" @mousedown="playSound" :title="'Play Snare'">
         <i class="fa fa-drum"></i>
       </button>
-      <button class="btn-bottom action" @click="playKickSound" :title="'Play Kick'">
+      <button class="btn-bottom action" @mousedown="playKickSound" :title="'Play Kick'">
         <i class="fa fa-drum-steelpan"></i>
       </button>
     </footer>
@@ -111,6 +111,7 @@
 </template>
 
 <script>
+import './App.css';
 import * as THREE from 'three';
 import DefaultNavbar from "../examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "../examples/footers/FooterDefault.vue";
@@ -118,7 +119,6 @@ import Controls from './sections/controls.vue';
 import { setupSocket } from './utils/socket';
 import { Howl } from 'howler';
 import api from './utils/api';
-import './App.css';
 import mainSoundUrl from '@/assets/audio/mi-sonido2.mp3';
 import kickSoundUrl from '@/assets/audio/kick_sound.mp3';
 
@@ -336,6 +336,9 @@ export default {
     },
     saveRecording(trackName) {
       // Convert recordedEvents to binary
+      
+      console.log(this.recordedEvents)
+
       const length = this.recordedEvents.length;
       // Each event: 2 floats + 1 int = (4 + 4 + 4) = 12 bytes per event
       // Plus 4 bytes for length
@@ -481,4 +484,42 @@ export default {
   },
 };
 </script>
+
+<style>
+.modal-overlay {
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.6);
+  z-index:9999;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+  box-sizing:border-box;
+}
+
+.modal-content {
+  background:#2c2c2c;
+  border:1px solid #444;
+  border-radius:8px;
+  width:400px;
+  max-width:90%;
+  display:flex;
+  flex-direction:column;
+  color:#ccc;
+  font-size:14px;
+  max-height:80vh;
+  overflow:hidden;
+}
+
+.modal-tabs {
+  display:flex;
+  border-bottom:1px solid #444;
+}
+
+
+</style>
 
