@@ -6,6 +6,8 @@ import Controls from './sections/controls.vue';
 import { setupSocket } from './utils/socket'; // Gestión global del socket
 import { Howl } from 'howler';
 import MyGraphics from './sections/graphics.vue';
+import axios from 'axios';
+
 
 export default {
   components: {
@@ -31,6 +33,9 @@ export default {
       baqueta2: null,
       stream: null,
       active : true,
+      allSounds: [],
+      selectedSoundIndex: 0,
+      selectedKickSoundIndex: 1
     };
   },
   mounted() {
@@ -116,22 +121,53 @@ export default {
       body.add(tip);
       return body;
     },
-    loadSounds() {
-      import('@/assets/audio/mi-sonido2.mp3').then((module) => {
-        this.sound = new Howl({
-          src: [module.default],
-          volume: 1.0,
-          loop: false
-        });
-      });
+    async loadSounds() {
+      let url = 'http://localhost:8080'
 
-      import('@/assets/audio/kick_sound.mp3').then((module) => {
-        this.kickSound = new Howl({
-          src: [module.default],
-          volume: 1.0,
-          loop: false
-        });
+      let admin={
+        email: 'admin@example.com',
+        password: 'admin'
+      }
+      let tokenS;
+      await axios.post(url+'/user/token/',admin).then((response) => {
+        tokenS = response.data.token;
+        console.log(tokenS);
+        
       });
+      
+
+      let config = {
+        headers: {
+          Authorization: 'Token '+tokenS,
+        }
+      }
+      await axios.get('http://localhost:8080/airdrum/sound/',config)
+        .then((response) => {
+          this.allSounds = response.data; // Guardamos todos los sonidos obtenidos
+
+          // Asignar el primer sonido (por ejemplo) a this.sound si existe
+          if (this.allSounds[this.selectedSoundIndex]) {
+            const soundUrl = this.allSounds[this.selectedSoundIndex].sound;
+            this.sound = new Howl({
+              src: [soundUrl],
+              volume: 1.0,
+              loop: false
+            });
+          }
+
+          // Asignar el segundo sonido (por ejemplo) a this.kickSound si existe
+          if (this.allSounds[this.selectedKickSoundIndex]) {
+            const kickSoundUrl = this.allSounds[this.selectedKickSoundIndex].sound;
+            this.kickSound = new Howl({
+              src: [kickSoundUrl],
+              volume: 1.0,
+              loop: false
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Error loading sounds:", error);
+        });
     },
     playSound() {
       if (this.sound) {
@@ -208,6 +244,23 @@ export default {
         }
       };
     },
+    assignSelectedSounds() {
+      if (this.allSounds[this.selectedSoundIndex]) {
+        this.sound = new Howl({
+          src: [this.allSounds[this.selectedSoundIndex].sound],
+          volume: 1.0,
+          loop: false
+        });
+      }
+
+      if (this.allSounds[this.selectedKickSoundIndex]) {
+        this.kickSound = new Howl({
+          src: [this.allSounds[this.selectedKickSoundIndex].sound],
+          volume: 1.0,
+          loop: false
+        });
+      }
+    }
   },
 };
 </script>
@@ -225,9 +278,21 @@ export default {
         <h3>Controles de Animación para Baqueta 1</h3>
         <button id="homebutton">Home</button>
         <Controls/>
+
+        <h4>Seleccionar sonido principal</h4>
+        <select v-model="selectedSoundIndex" @change="assignSelectedSounds">
+          <option v-for="(s,index) in allSounds" :key="s.id" :value="index">{{ s.name }}</option>
+        </select>
+
+        <h4>Seleccionar sonido de kick</h4>
+        <select v-model="selectedKickSoundIndex" @change="assignSelectedSounds">
+          <option v-for="(s,index) in allSounds" :key="s.id" :value="index">{{ s.name }}</option>
+        </select>
+
         <button @click="playSound">Play Sound</button>
         <button @click="playKickSound">Play Kick Sound</button>
       </div>
+
       <div id="scene-container"></div>
     </div>
     <MyGraphics/>
