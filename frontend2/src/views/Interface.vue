@@ -13,10 +13,8 @@
             <i class="fa fa-cog"></i>
           </button>
         </div>
-        <div class="section-title">Controls</div>
+        <div class="section-title">Controls & Player</div>
         <Controls class="controls-section" />
-        <div class="section-title">Player</div>
-        <Controller />
       </aside>
       <div id="scene-container" class="scene-container"></div>
     </div>
@@ -33,37 +31,71 @@
       </button>
     </footer>
 
+    <DefaultFooter />
+
     <transition name="fade">
       <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
         <div class="modal-content">
-          <h3>Sound Settings</h3>
-          <h4>Seleccionar sonido principal</h4>
-          <select v-model="selectedSoundIndex" @change="assignSelectedSounds">
-            <option v-for="(s, index) in allSounds" :key="s.id" :value="index">{{ s.name }}</option>
-          </select>
+          <!-- Tabs for Switching Between Sound Selection and Management -->
+          <div class="modal-tabs">
+            <button 
+              class="tab-btn"
+              :class="{active: activeTab==='selection'}" 
+              @click="activeTab='selection'">Selection</button>
+            <button 
+              class="tab-btn" 
+              :class="{active: activeTab==='management'}" 
+              @click="activeTab='management'">Management</button>
+          </div>
 
-          <h4>Seleccionar sonido de kick</h4>
-          <select v-model="selectedKickSoundIndex" @change="assignSelectedSounds">
-            <option v-for="(s, index) in allSounds" :key="s.id" :value="index">{{ s.name }}</option>
-          </select>
+          <div class="modal-body">
+            <!-- Selection Tab -->
+            <div v-show="activeTab==='selection'" class="tab-section">
+              <h3>Sound Selection</h3>
+              <div class="form-group">
+                <label>Principal Sound:</label>
+                <select v-model="selectedSoundIndex" @change="assignSelectedSounds">
+                  <option v-for="(s, index) in allSounds" :key="index" :value="index">{{ s.name }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Kick Sound:</label>
+                <select v-model="selectedKickSoundIndex" @change="assignSelectedSounds">
+                  <option v-for="(s, index) in allSounds" :key="index" :value="index">{{ s.name }}</option>
+                </select>
+              </div>
+            </div>
 
-          <h3>Agregar un nuevo sonido</h3>
-          <form @submit.prevent="postSound">
-            <div class="form-group">
-              <label>Nombre:</label>
-              <input type="text" v-model="newSound.name" required />
+            <!-- Management Tab -->
+            <div v-show="activeTab==='management'" class="tab-section">
+              <h3>Upload New Sound</h3>
+              <form @submit.prevent="postSound" class="upload-form">
+                <div class="form-group">
+                  <label>Name:</label>
+                  <input type="text" v-model="newSound.name" required />
+                </div>
+                <div class="form-group">
+                  <label>Sound File:</label>
+                  <input type="file" @change="handleFileUpload" accept="audio/*" required />
+                </div>
+                <div class="form-group-inline">
+                  <input type="checkbox" v-model="newSound.private" />
+                  <span>Private</span>
+                </div>
+                <button class="submit-btn" type="submit">Upload</button>
+              </form>
+              <p v-if="serverResponse" class="response-text">{{ serverResponse }}</p>
+
+              <h3>User Uploaded Sounds</h3>
+              <div class="uploaded-list" v-if="uploadedSounds.length > 0">
+                <div class="uploaded-item" v-for="sound in uploadedSounds" :key="sound.id">
+                  <span class="sound-name">{{ sound.name }}</span>
+                  <button class="delete-btn" @click="deleteSound(sound.id)">Delete</button>
+                </div>
+              </div>
+              <p v-else class="no-sounds">No uploaded sounds found</p>
             </div>
-            <div class="form-group">
-              <label>Archivo de sonido:</label>
-              <input type="file" @change="handleFileUpload" accept="audio/*" required />
-            </div>
-            <div class="form-group-inline">
-              <input type="checkbox" v-model="newSound.private" />
-              <span>Privado</span>
-            </div>
-            <button class="submit-btn" type="submit">Enviar</button>
-          </form>
-          <p v-if="serverResponse" class="response-text">{{ serverResponse }}</p>
+          </div>
 
           <div class="modal-actions">
             <button class="close-btn" @click="showModal=false">
@@ -84,6 +116,9 @@ import Controls from './sections/controls.vue';
 import { setupSocket } from './utils/socket';
 import { Howl } from 'howler';
 import api from './utils/api';
+
+import mainSoundUrl from '@/assets/audio/mi-sonido2.mp3';
+import kickSoundUrl from '@/assets/audio/kick_sound.mp3';
 
 export default {
   components: {
@@ -106,6 +141,10 @@ export default {
       renderer: null,
       active: true,
       isRecording: false,
+      defaultSounds: [
+        { name: 'Default Snare', sound: mainSoundUrl },
+        { name: 'Default Kick', sound: kickSoundUrl }
+      ],
       allSounds: [],
       selectedSoundIndex: 0,
       selectedKickSoundIndex: 1,
@@ -116,20 +155,26 @@ export default {
       selectedFile: null,
       serverResponse: null,
       showModal: false,
+      activeTab: 'selection' // New state to manage which tab is active
     };
+  },
+  computed: {
+    uploadedSounds() {
+      return this.allSounds.filter(s => s.id !== undefined);
+    }
   },
   mounted() {
     this.initialize3DScene();
     this.setupSocketHandlers();
-
-    let homeButton = document.getElementById("homebutton");
-    homeButton.addEventListener("click", () => {
-      this.yawZero = this.yaw;
-      this.pitchZero = this.pitch;
-      this.rollZero = this.roll;
-    });
-
     this.loadSounds();
+    let homeButton = document.getElementById("homebutton");
+    if (homeButton) {
+      homeButton.addEventListener("click", () => {
+        this.yawZero = this.yaw;
+        this.pitchZero = this.pitch;
+        this.rollZero = this.roll;
+      });
+    }
   },
   methods: {
     homeClicked() {
@@ -221,7 +266,7 @@ export default {
         this.serverResponse = 'Sonido subido exitosamente.';
         this.newSound = { name: '', private: true };
         this.selectedFile = null;
-        this.loadSounds();
+        await this.loadSounds();
       } catch (error) {
         this.serverResponse = error.response ? error.response.data : 'Error al subir el sonido.';
       }
@@ -229,15 +274,34 @@ export default {
     async loadSounds() {
       try {
         const response = await api.get('/airdrum/sound/');
-        this.allSounds = response.data;
+        const serverSounds = response.data || [];
+        // Merge defaults and server sounds
+        this.allSounds = [...this.defaultSounds, ...serverSounds];
         this.assignSelectedSounds();
-      } catch (error) {}
+      } catch (error) {
+        // If server fails, still show default sounds
+        this.allSounds = [...this.defaultSounds];
+        this.assignSelectedSounds();
+      }
+    },
+    async deleteSound(id) {
+      try {
+        await api.delete(`/airdrum/sound/${id}`);
+        this.allSounds = this.allSounds.filter(s => s.id !== id);
+        this.assignSelectedSounds();
+      } catch (error) {
+        console.error('Error deleting sound:', error);
+      }
     },
     playSound() {
-      if (this.sound) this.sound.play();
+      if (this.sound) {
+        this.sound.play();
+      }
     },
     playKickSound() {
-      if (this.kickSound) this.kickSound.play();
+      if (this.kickSound) {
+        this.kickSound.play();
+      }
     },
     toggleRecording() {
       this.isRecording = !this.isRecording;
@@ -258,7 +322,7 @@ export default {
       const tipGlobalPosition = new THREE.Vector3();
       tip.getWorldPosition(tipGlobalPosition);
       if (this.active && tipGlobalPosition.y <= -1) {
-        this.playSound();
+        if (this.sound) this.sound.play();
         this.active = false;
       } else if (!this.active && tipGlobalPosition.y > -1) {
         this.active = true;
@@ -290,18 +354,32 @@ export default {
           this.yaw = dataView.getFloat64(16, false);
         } else {
           const data = JSON.parse(e.data);
-          if (data.command === "kick") this.playKickSound();
+          if (data.command === "kick" && this.kickSound) this.kickSound.play();
         }
       };
     },
     assignSelectedSounds() {
+      // main sound
       if (this.allSounds[this.selectedSoundIndex]) {
-        const soundUrl = this.allSounds[this.selectedSoundIndex].sound;
-        this.sound = new Howl({ src: [soundUrl], volume: 1.0, loop: false });
+        const mainSoundUrl = this.allSounds[this.selectedSoundIndex].sound;
+        this.sound = new Howl({
+          src: [mainSoundUrl],
+          volume: 1.0,
+          loop: false,
+          html5: true,
+          preload: true
+        });
       }
+      // kick sound
       if (this.allSounds[this.selectedKickSoundIndex]) {
         const kickSoundUrl = this.allSounds[this.selectedKickSoundIndex].sound;
-        this.kickSound = new Howl({ src: [kickSoundUrl], volume: 1.0, loop: false });
+        this.kickSound = new Howl({
+          src: [kickSoundUrl],
+          volume: 1.0,
+          loop: false,
+          html5: true,
+          preload: true
+        });
       }
     }
   },
@@ -375,25 +453,6 @@ export default {
   color:#aaa;
   text-transform:uppercase;
   letter-spacing:1px;
-}
-
-.btn.btn-block {
-  display: block;
-  width: 100%;
-  margin-bottom: 20px;
-  background: #4a90e2;
-  color: #fff;
-  text-align: center;
-  border: none;
-  border-radius: 4px;
-  padding: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.btn.btn-block:hover {
-  background: #357ab8;
 }
 
 .controls-section {
@@ -473,29 +532,65 @@ export default {
   display:flex;
   justify-content:center;
   align-items:center;
+  padding:20px;
+  box-sizing:border-box;
 }
 
 .modal-content {
   background:#2c2c2c;
-  padding:20px;
+  border:1px solid #444;
   border-radius:8px;
   width:400px;
   max-width:90%;
-  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
   color:#ccc;
   font-size:14px;
+  max-height:80vh; /* limit height */
+  overflow:hidden; /* prevent overflow outside */
 }
 
-.modal-content h3 {
+.modal-tabs {
+  display:flex;
+  border-bottom:1px solid #444;
+}
+
+.tab-btn {
+  flex:1;
+  background:none;
+  border:none;
+  padding:10px;
+  text-align:center;
+  color:#aaa;
+  font-size:14px;
+  cursor:pointer;
+  transition:background 0.2s, color 0.2s;
+}
+
+.tab-btn:hover {
+  background:#3a3a3a;
+}
+
+.tab-btn.active {
+  color:#fff;
+  background:#3a3a3a;
+  font-weight:bold;
+}
+
+.modal-body {
+  flex:1;
+  overflow:auto;
+  padding:15px;
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+
+.tab-section h3 {
   margin-top:0;
   margin-bottom:10px;
   color:#fff;
-}
-
-.modal-content h4 {
-  margin-bottom:10px;
-  margin-top:20px;
-  color:#ccc;
+  font-size:15px;
 }
 
 .form-group,
@@ -540,6 +635,8 @@ input[type="checkbox"] {
   font-size:14px;
   cursor:pointer;
   transition:background 0.2s;
+  width:100%;
+  text-align:center;
 }
 
 .submit-btn:hover {
@@ -552,8 +649,50 @@ input[type="checkbox"] {
   font-size:13px;
 }
 
+.uploaded-list {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.uploaded-item {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:#3a3a3a;
+  padding:8px;
+  border-radius:4px;
+}
+
+.sound-name {
+  font-size:13px;
+  color:#fff;
+}
+
+.delete-btn {
+  background:#e74c3c;
+  color:#fff;
+  border:none;
+  padding:4px 8px;
+  border-radius:4px;
+  font-size:13px;
+  cursor:pointer;
+  transition: background 0.2s;
+}
+
+.delete-btn:hover {
+  background:#c0392b;
+}
+
+.no-sounds {
+  font-size:13px;
+  color:#888;
+  font-style:italic;
+}
+
 .modal-actions {
-  margin-top:20px;
+  border-top:1px solid #444;
+  padding:10px;
   display:flex;
   justify-content:flex-end;
 }
@@ -600,7 +739,7 @@ input[type="checkbox"] {
 @media (max-width:480px) {
   .modal-content {
     width:90%;
-    padding:10px;
+    padding:0;
   }
 
   .submit-btn, .close-btn {

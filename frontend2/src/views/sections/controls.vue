@@ -5,24 +5,29 @@
     <div class="current-track">
       <p>{{ currentTrackName || 'No Track Selected' }}</p>
     </div>
-    <div class="controls">
-      <button class="icon-btn play" @click="playMusic(currentTrack)" :title="'Play'">
-        <i class="fa fa-play"></i>
-      </button>
-      <button class="icon-btn pause" @click="pauseMusic" :title="'Pause'">
-        <i class="fa fa-pause"></i>
-      </button>
-      <button class="icon-btn stop" @click="stopMusic" :title="'Stop'">
-        <i class="fa fa-stop"></i>
-      </button>
+
+    <div  v-show="currentTrack">
+          <div class="controls">
+        <!-- Toggle playback button: play if paused, pause if playing -->
+        <button class="icon-btn play-pause" @click="togglePlayback" :title="isPlaying ? 'Pause' : 'Play'">
+          <i class="fa" :class="isPlaying ? 'fa-pause' : 'fa-play'"></i>
+        </button>
+        <!-- Reset playback head button (<<) -->
+        <button class="icon-btn reset" @click="resetPlayback" :title="'Reset to Start'">
+          <i class="fa fa-step-backward"></i>
+        </button>
+        </div>
+      
+        <div class="progress-bar">
+          <input type="range" min="0" :max="duration" v-model="currentTime" @input="seekMusic">
+        </div>
+        <div class="volume-control">
+          <label>Volume: {{ (volume * 100).toFixed(0) }}%</label>
+          <input type="range" min="0" max="1" step="0.01" v-model="volume" @input="setVolume">
+        </div>
     </div>
-    <div class="progress-bar">
-      <input type="range" min="0" :max="duration" v-model="currentTime" @input="seekMusic">
-    </div>
-    <div class="volume-control">
-      <label>Volume: {{ (volume * 100).toFixed(0) }}%</label>
-      <input type="range" min="0" max="1" step="0.01" v-model="volume" @input="setVolume">
-    </div>
+    
+
     <ul class="track-list">
       <li v-for="(track, index) in tracks" :key="index">
         <button class="track-btn" @click="selectTrack(track)">
@@ -46,6 +51,7 @@ export default {
       currentTime: 0,
       duration: 0,
       volume: 1.0,
+      isPlaying: false, // Track if we are currently playing or paused
       tracks: [
         { name: 'Ambient_Rock', src: () => import('@/assets/music/Ambient_Rock.mp3') },
         { name: 'Energetic_Rock_Track', src: () => import('@/assets/music/Energetic_Rock_Track.mp3') },
@@ -59,12 +65,11 @@ export default {
     selectTrack(track) {
       this.currentTrack = track;
       this.currentTrackName = track.name;
-      this.playMusic(track);
-    },
-    playMusic(track) {
-      if (!track) return;
-      if (this.music) this.music.stop();
+      // Load track but do not start playing immediately
       track.src().then((module) => {
+        if (this.music) {
+          this.music.unload();
+        }
         this.music = new Howl({
           src: [module.default],
           volume: this.volume,
@@ -74,26 +79,43 @@ export default {
             requestAnimationFrame(this.updateProgress);
           }
         });
-        this.music.play();
+        this.isPlaying = false; // When a new track is loaded, start paused
+        this.currentTime = 0;   // Reset head to start
       });
     },
-    pauseMusic() {
-      if (this.music) this.music.pause();
+    togglePlayback() {
+      if (!this.music) return; // No track loaded, do nothing
+
+      if (this.isPlaying) {
+        // If currently playing, pause
+        this.music.pause();
+        this.isPlaying = false;
+      } else {
+        // If currently paused, resume playback from current position
+        this.music.play();
+        this.isPlaying = true;
+      }
     },
-    stopMusic() {
+    resetPlayback() {
       if (this.music) {
-        this.music.stop();
+        this.music.seek(0);
         this.currentTime = 0;
+        // Don't change isPlaying, just move head to start
       }
     },
     seekMusic(event) {
-      if (this.music) this.music.seek(event.target.value);
+      if (this.music) {
+        this.music.seek(event.target.value);
+        this.currentTime = parseFloat(event.target.value);
+      }
     },
     setVolume(event) {
-      if (this.music) this.music.volume(event.target.value);
+      if (this.music) {
+        this.music.volume(event.target.value);
+      }
     },
     updateProgress() {
-      if (this.music && this.music.playing()) {
+      if (this.music && this.isPlaying) {
         this.currentTime = this.music.seek();
         requestAnimationFrame(this.updateProgress);
       }
