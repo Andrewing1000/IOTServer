@@ -12,11 +12,11 @@ import axios from 'axios';
 export default {
   components: {
     DefaultNavbar,
-    DefaultFooter,  
+    DefaultFooter,
     Controls,
     MyGraphics,
   },
-    data() {
+  data() {
     return {
       yaw: 0,
       pitch: 0,
@@ -32,19 +32,27 @@ export default {
       baqueta1: null,
       baqueta2: null,
       stream: null,
-      active : true,
+      active: true,
       allSounds: [],
       selectedSoundIndex: 0,
-      selectedKickSoundIndex: 1
+      selectedKickSoundIndex: 1,
+      showSidebar: true,
+      showSoundSidebar: false,
+      newSound: {
+        name: '',
+        private: true
+      },
+      selectedFile: null,
+      serverResponse: null,
     };
   },
   mounted() {
     this.initialize3DScene();
     this.setupSocketHandlers();
     let homeButton = document.getElementById("homebutton")
-    
 
-    homeButton.addEventListener("click", e=>{
+
+    homeButton.addEventListener("click", e => {
       console.log("Homed")
       this.yawZero = this.yaw
       this.pitchZero = this.pitch
@@ -77,6 +85,10 @@ export default {
       renderer.setClearColor(0x000000, 0);
       document.getElementById('scene-container').appendChild(renderer.domElement);
       return renderer;
+    },
+    toggleSidebars() {
+      this.showSidebar = !this.showSidebar;
+      this.showSoundSidebar = !this.showSoundSidebar;
     },
     setupLighting(scene) {
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -121,27 +133,73 @@ export default {
       body.add(tip);
       return body;
     },
-    async loadSounds() {
+    handleFileUpload(event) {
+      this.selectedFile = event.target.files[0];
+    },
+    async postSound() {
       let url = 'http://localhost:8080'
 
-      let admin={
+      let admin = {
         email: 'admin@example.com',
         password: 'admin'
       }
       let tokenS;
-      await axios.post(url+'/user/token/',admin).then((response) => {
+      await axios.post(url + '/user/token/', admin).then((response) => {
         tokenS = response.data.token;
         console.log(tokenS);
-        
+
       });
-      
+
 
       let config = {
         headers: {
-          Authorization: 'Token '+tokenS,
+          Authorization: 'Token ' + tokenS,
         }
       }
-      await axios.get('http://localhost:8080/airdrum/sound/',config)
+      try {
+        const formData = new FormData();
+        formData.append('name', this.newSound.name);
+        formData.append('private', this.newSound.private);
+        formData.append('sound', this.selectedFile); // Aquí adjuntamos el archivo
+
+        const response = await axios.post('http://localhost:8080/airdrum/sound/', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': 'Token ' + tokenS
+          }
+        });
+
+        this.serverResponse = response.data;
+        // Limpiar el formulario
+        this.newSound = { name: '', private: true };
+        this.selectedFile = null;
+        this.loadSounds();
+      } catch (error) {
+        console.error('Error posting sound:', error);
+        this.serverResponse = error.response ? error.response.data : error.message;
+      }
+    },
+    async loadSounds() {
+      let url = 'http://localhost:8080'
+
+      let admin = {
+        email: 'admin@example.com',
+        password: 'admin'
+      }
+      let tokenS;
+      await axios.post(url + '/user/token/', admin).then((response) => {
+        tokenS = response.data.token;
+        console.log(tokenS);
+
+      });
+
+
+      let config = {
+        headers: {
+          Authorization: 'Token ' + tokenS,
+        }
+      }
+      await axios.get('http://localhost:8080/airdrum/sound/', config)
         .then((response) => {
           this.allSounds = response.data; // Guardamos todos los sonidos obtenidos
 
@@ -198,23 +256,23 @@ export default {
       const tipGlobalPosition = new THREE.Vector3();
       tip.getWorldPosition(tipGlobalPosition)
 
-      if(this.active){
-        if (tipGlobalPosition.y  <= -1) {
+      if (this.active) {
+        if (tipGlobalPosition.y <= -1) {
           this.playSound()
           this.active = false;
         }
       }
-      else{
+      else {
         if (tipGlobalPosition.y > -1) {
           this.active = true;
         }
       }
 
-      
-        baqueta1.rotation.x = (this.pitch - this.pitchZero) - Math.PI / 2;
-        baqueta1.rotation.y = (this.yaw - this.yawZero);
-        baqueta1.rotation.z = -(this.roll - this.rollZero);
-    
+
+      baqueta1.rotation.x = (this.pitch - this.pitchZero) - Math.PI / 2;
+      baqueta1.rotation.y = (this.yaw - this.yawZero);
+      baqueta1.rotation.z = -(this.roll - this.rollZero);
+
     },
     setupResizeHandler(camera, renderer) {
       window.addEventListener('resize', () => {
@@ -238,7 +296,7 @@ export default {
         } else {
           const data = JSON.parse(e.data);
           this.playKickSound();
-          if (data.command === "kick" ) {
+          if (data.command === "kick") {
             this.playKickSound();
           }
         }
@@ -267,38 +325,64 @@ export default {
 
 <template>
   <div id="app" class="background">
-    <DefaultNavbar
-      :action="{
-        route: 'javascript:;',
-        color: 'btn-white',
-      }"  
-    />
+    <DefaultNavbar :action="{ route: 'javascript:;', color: 'btn-white' }" />
     <div id="main-content">
-      <div id="sidebar">
+      <!-- Barra lateral izquierda -->
+      <div id="sidebar" v-show="showSidebar">
         <h3>Controles de Animación para Baqueta 1</h3>
         <button id="homebutton">Home</button>
         <Controls/>
 
+        <!-- Botón para ocultar este sidebar y mostrar el otro -->
+        <button @click="toggleSidebars">Ir a Ajustes de Sonido</button>
+      </div>
+
+      <!-- Barra lateral derecha -->
+      <div id="sound-sidebar" v-show="showSoundSidebar">
         <h4>Seleccionar sonido principal</h4>
         <select v-model="selectedSoundIndex" @change="assignSelectedSounds">
-          <option v-for="(s,index) in allSounds" :key="s.id" :value="index">{{ s.name }}</option>
+          <option v-for="(s, index) in allSounds" :key="s.id" :value="index">{{ s.name }}</option>
         </select>
 
         <h4>Seleccionar sonido de kick</h4>
         <select v-model="selectedKickSoundIndex" @change="assignSelectedSounds">
-          <option v-for="(s,index) in allSounds" :key="s.id" :value="index">{{ s.name }}</option>
+          <option v-for="(s, index) in allSounds" :key="s.id" :value="index">{{ s.name }}</option>
         </select>
+
+        <div>
+          <h3>Agregar un nuevo sonido</h3>
+          <form @submit.prevent="postSound">
+            <div>
+              <label for="name">Nombre:</label>
+              <input type="text" id="name" v-model="newSound.name" required />
+            </div>
+            <div>
+              <label for="sound">URL/Path:</label>
+              <input type="file" id="sound" @change="handleFileUpload" required />
+            </div>
+            <div>
+              <label for="private">Privado:</label>
+              <input type="checkbox" id="private" v-model="newSound.private" />
+            </div>
+            <button type="submit">Enviar</button>
+          </form>
+        </div>
 
         <button @click="playSound">Play Sound</button>
         <button @click="playKickSound">Play Kick Sound</button>
+
+        <!-- Botón para ocultar este sidebar y mostrar el otro -->
+        <button @click="toggleSidebars">Volver a Controles</button>
       </div>
 
       <div id="scene-container"></div>
     </div>
+
     <MyGraphics/>
     <DefaultFooter />
   </div>
 </template>
+
 
 <style>
 .background {
@@ -307,45 +391,101 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  /* background: url("src/assets/img/escenario.jpg") no-repeat center center fixed; */
-  background-color: aqua;
+  background-color: #ADD8E6;
+  /* un tono de azul claro */
   background-size: cover;
-  z-index: -1; /* Ensure it is behind other content */
+  z-index: -1;
+  /* detrás de los elementos */
+  font-family: Arial, sans-serif;
+  color: #333;
 }
 
 #main-content {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  height: calc(100% - 100px); /* Adjust based on navbar and footer height */
+  height: calc(100% - 100px);
+  /* Ajustado según navbar y footer */
   padding: 20px;
+  gap: 20px;
+  /* Espacio entre columnas */
 }
 
 #scene-container {
   flex: 1;
   position: relative;
-  background-color: #67676739;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  max-height: 100%;
 }
 
 #sidebar {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   padding: 20px;
   border-radius: 8px;
-  width: 300px;
+  min-width: 300px;
+  border: 1px solid #ddd;
+}
+#sound-sidebar {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  border-radius: 8px;
+  min-width: 300px;
+  border: 1px solid #ddd;
 }
 
-canvas {
-  display: block;
+#sidebar h3,
+#sound-sidebar h3,
+#sidebar h4,
+#sound-sidebar h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+label {
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+input[type="text"],
+input[type="file"],
+select,
+textarea {
   width: 100%;
-  height: 100%;
+  padding: 5px 8px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-label, input, button {
-  display: block;
-  margin-bottom: 5px;
+input[type="checkbox"] {
+  margin-right: 5px;
 }
 
 button {
+  display: inline-block;
+  background-color: #3498db;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 5px;
   cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 14px;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+pre {
+  background: #eee;
+  padding: 10px;
+  border-radius: 4px;
+  overflow: auto;
+  font-size: 13px;
 }
 </style>
