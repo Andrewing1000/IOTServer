@@ -1,1 +1,16 @@
 flake8>=3.9.2,<3.10
+Django>=3.2.4,<3.3
+djangorestframework>=3.12.4,<3.13
+drf-spectacular>=0.15.1,<0.27
+django-password-validators
+django-cors-headers
+Pillow>=8.2.0, <8.3.0
+django-filter
+psycopg2-binary
+channels
+numpy
+scipy
+uvicorn[standard]
+audioread
+pydub 
+

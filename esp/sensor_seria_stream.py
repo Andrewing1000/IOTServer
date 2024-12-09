@@ -117,6 +117,9 @@ async def imu_refresh():
         gyro = sensor.raw_gyro
         mag = sensor.magnetic
         
+#         print(acc)
+#         print(gyro)
+#         print(mag)
         t0 = time.ticks_ms()
         data = struct.pack('>6i3d1I', *(acc + gyro + mag + (elapsed_time, )))
         await ws.send(data)

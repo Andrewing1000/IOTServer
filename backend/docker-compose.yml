@@ -5,6 +5,7 @@ services:
       context: .
       args:
         - DEV=true
+    container_name: airdrum_server
     ports:
       - "8080:8080"
     volumes:
@@ -29,12 +30,17 @@ services:
 
   db:
     image: postgres:13-alpine
-    volumes:
-      - dev-db-data:/var/lib/postgres/data
+    container_name: airdrum_db
     environment:
       - POSTGRES_DB=devdb             #Local dev DataBase configuration for instalation
       - POSTGRES_USER=devuser
       - POSTGRES_PASSWORD=changeme
+      - PGHOST=0.0.0.0
+    ports:
+      - "5432:5432"
+    volumes:
+      - dev-db-data:/var/lib/postgres/data
+    
 volumes:
   dev-db-data: #volume name, if left blank docker will assign it automatically
   dev-static-data:
