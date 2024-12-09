@@ -23,6 +23,7 @@ const authService = {
         email,
         password,
       });
+      localStorage.setItem('authToken', response.data['token'])
       return response.data;
     } catch (error) {
       throw error;
