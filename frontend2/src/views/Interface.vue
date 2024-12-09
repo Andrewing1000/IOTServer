@@ -38,6 +38,7 @@ export default {
       selectedKickSoundIndex: 1,
       showSidebar: true,
       showSoundSidebar: false,
+      selectedSoundToDelete: '',
       newSound: {
         name: '',
         private: true
@@ -135,6 +136,38 @@ export default {
     },
     handleFileUpload(event) {
       this.selectedFile = event.target.files[0];
+    },
+    async deleteSelectedSound() {
+      if (!this.selectedSoundToDelete) return;
+      try {
+        let url = 'http://localhost:8080'
+
+        let admin = {
+          email: 'admin@example.com',
+          password: 'admin'
+        }
+        let tokenS;
+        await axios.post(url + '/user/token/', admin).then((response) => {
+          tokenS = response.data.token;
+          console.log(tokenS);
+
+        });
+
+
+        let config = {
+          headers: {
+            Authorization: 'Token ' + tokenS,
+          }
+        }
+        await axios.delete(`http://localhost:8080/airdrum/sound/${this.selectedSoundToDelete}/`,config);
+        // Filtramos el sonido eliminado de la lista local
+        this.allSounds = this.allSounds.filter(sound => sound.id !== this.selectedSoundToDelete);
+        // Reiniciamos la selección
+        this.selectedSoundToDelete = '';
+        this.loadSounds();
+      } catch (error) {
+        console.error('Error deleting sound:', error);
+      }
     },
     async postSound() {
       let url = 'http://localhost:8080'
@@ -367,6 +400,16 @@ export default {
             <button type="submit">Enviar</button>
           </form>
         </div>
+
+        <!-- Nueva sección para listar y eliminar sonidos -->
+        <h4>Eliminar un sonido</h4>
+        <select v-model="selectedSoundToDelete">
+          <option disabled value="">Selecciona un sonido</option>
+          <option v-for="sound in allSounds" :key="sound.id" :value="sound.id">
+            {{ sound.name }}
+          </option>
+        </select>
+        <button @click="deleteSelectedSound" :disabled="!selectedSoundToDelete">Eliminar</button>
 
         <button @click="playSound">Play Sound</button>
         <button @click="playKickSound">Play Kick Sound</button>
