@@ -240,7 +240,20 @@ watch(
             </div>
           </li>
         </ul>
+        <ul>
+          <li><router-link to="/aprende">Aprende con Nosotros</router-link></li>
+        </ul>
       </div>
     </div>
   </nav>
-  </template>
+</template>
+
+<script>
+export default {
+  name: 'NavbarDefault',
+};
+</script>
+
+<style scoped>
+/* Estilos para NavbarDefault.vue */
+</style>

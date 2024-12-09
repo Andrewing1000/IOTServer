@@ -14,7 +14,7 @@ export default {
     Controls,
     MyGraphics,
   },
-    data() {
+  data() {
     return {
       yaw: 0,
       pitch: 0,
@@ -30,21 +30,20 @@ export default {
       baqueta1: null,
       baqueta2: null,
       stream: null,
-      active : true,
+      active: true,
     };
   },
   mounted() {
     this.initialize3DScene();
     this.setupSocketHandlers();
-    let homeButton = document.getElementById("homebutton")
-    
+    let homeButton = document.getElementById("homebutton");
 
-    homeButton.addEventListener("click", e=>{
-      console.log("Homed")
-      this.yawZero = this.yaw
-      this.pitchZero = this.pitch
-      this.rollZero = this.roll
-    })
+    homeButton.addEventListener("click", e => {
+      console.log("Homed");
+      this.yawZero = this.yaw;
+      this.pitchZero = this.pitch;
+      this.rollZero = this.roll;
+    });
   },
   methods: {
     initialize3DScene() {
@@ -144,7 +143,6 @@ export default {
       }
     },
     setupAnimationLoop(scene, camera, renderer) {
-
       const animate = () => {
         requestAnimationFrame(animate);
 
@@ -155,30 +153,26 @@ export default {
       animate();
     },
     updateBaquetaRotations(scene) {
-
       const baqueta1 = scene.children.find((obj) => obj.name === "baqueta1");
 
-      let tip = baqueta1.getObjectByName("tip")
+      let tip = baqueta1.getObjectByName("tip");
       const tipGlobalPosition = new THREE.Vector3();
-      tip.getWorldPosition(tipGlobalPosition)
+      tip.getWorldPosition(tipGlobalPosition);
 
-      if(this.active){
-        if (tipGlobalPosition.y  <= -1) {
-          this.playSound()
+      if (this.active) {
+        if (tipGlobalPosition.y <= -1) {
+          this.playSound();
           this.active = false;
         }
-      }
-      else{
+      } else {
         if (tipGlobalPosition.y > -1) {
           this.active = true;
         }
       }
 
-      
-        baqueta1.rotation.x = (this.pitch - this.pitchZero) - Math.PI / 2;
-        baqueta1.rotation.y = (this.yaw - this.yawZero);
-        baqueta1.rotation.z = -(this.roll - this.rollZero);
-    
+      baqueta1.rotation.x = (this.pitch - this.pitchZero) - Math.PI / 2;
+      baqueta1.rotation.y = (this.yaw - this.yawZero);
+      baqueta1.rotation.z = -(this.roll - this.rollZero);
     },
     setupResizeHandler(camera, renderer) {
       window.addEventListener('resize', () => {
@@ -189,9 +183,8 @@ export default {
     },
     setupSocketHandlers() {
       const socket = setupSocket();
-      socket.binaryType = "arraybuffer"
+      socket.binaryType = "arraybuffer";
       socket.onmessage = (e) => {
-
         if (e.data instanceof ArrayBuffer) {
           const buffer = e.data;
           const dataView = new DataView(buffer);
@@ -202,7 +195,7 @@ export default {
         } else {
           const data = JSON.parse(e.data);
           this.playKickSound();
-          if (data.command === "kick" ) {
+          if (data.command === "kick") {
             this.playKickSound();
           }
         }
@@ -223,10 +216,10 @@ export default {
     <div id="main-content">
       <div id="sidebar">
         <h3>Controles de Animación para Baqueta 1</h3>
-        <button id="homebutton">Home</button>
+        <button id="homebutton" class="btn">Home</button>
         <Controls/>
-        <button @click="playSound">Play Sound</button>
-        <button @click="playKickSound">Play Kick Sound</button>
+        <button @click="playSound" class="btn">Play Sound</button>
+        <button @click="playKickSound" class="btn">Play Kick Sound</button>
       </div>
       <div id="scene-container"></div>
     </div>
@@ -235,38 +228,55 @@ export default {
   </div>
 </template>
 
-<style>
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
 .background {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  /* background: url("src/assets/img/escenario.jpg") no-repeat center center fixed; */
-  background-color: aqua;
+  background: linear-gradient(135deg, #6dd5ed, #2193b0);
   background-size: cover;
-  z-index: -1; /* Ensure it is behind other content */
+  z-index: -1;
+  animation: backgroundAnimation 10s infinite alternate;
+}
+
+@keyframes backgroundAnimation {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }
 
 #main-content {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  height: calc(100% - 100px); /* Adjust based on navbar and footer height */
+  height: calc(100% - 100px);
   padding: 20px;
+  animation: fadeIn 1s ease-in-out;
 }
 
 #scene-container {
   flex: 1;
   position: relative;
-  background-color: #67676739;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 1s ease-in-out;
 }
 
 #sidebar {
   background: rgba(255, 255, 255, 0.9);
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   width: 300px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  animation: slideIn 1s ease-in-out;
 }
 
 canvas {
@@ -277,10 +287,31 @@ canvas {
 
 label, input, button {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
 }
 
 button {
   cursor: pointer;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #2193b0;
+  color: white;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #6dd5ed;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
 }
 </style>

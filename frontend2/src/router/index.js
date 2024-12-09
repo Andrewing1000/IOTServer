@@ -7,43 +7,51 @@ import InterfaceView from "../views/Interface.vue";
 import Login from "../views/Login.vue"; // Import Login component
 import Register from "../views/Register.vue"; // Import Register component
 import Admin from "../views/Admin.vue"; // Import Admin component (to be created)
+import Aprende from '../examples/navbars/Aprende.vue'; // Importa la nueva pantalla Aprende.vue
+
+const routes = [
+  {
+    path: "/",
+    name: "presentation",
+    component: PresentationView,
+  },
+  {
+    path: "/pages/landing-pages/about-us",
+    name: "about",
+    component: AboutView,
+  },
+  {
+    path: "/pages/interface",
+    name: "interface",
+    component: InterfaceView,
+  },
+  {
+    path: "/login",
+    name: "login",
+    component: Login,
+  },
+  {
+    path: "/register",
+    name: "register",
+    component: Register,
+  },
+  {
+    path: "/admin",
+    name: "admin",
+    component: Admin,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/aprende",
+    name: "aprende",
+    component: Aprende,
+  },
+  // Add more routes as needed
+];
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: "/",
-      name: "presentation",
-      component: PresentationView,
-    },
-    {
-      path: "/pages/landing-pages/about-us",
-      name: "about",
-      component: AboutView,
-    },
-    {
-      path: "/pages/interface",
-      name: "interface",
-      component: InterfaceView,
-    },
-    {
-      path: "/login",
-      name: "login",
-      component: Login,
-    },
-    {
-      path: "/register",
-      name: "register",
-      component: Register,
-    },
-    {
-      path: "/admin",
-      name: "admin",
-      component: Admin,
-      meta: { requiresAuth: true, requiresAdmin: true },
-    },
-    // Add more routes as needed
-  ],
+  routes,
 });
 
 // Navigation Guard to protect routes
