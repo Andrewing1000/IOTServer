@@ -415,9 +415,9 @@ export default {
       } else if (!this.active && tipGlobalPosition.y > -1) {
         this.active = true;
       }
-      baqueta1.rotation.x = (this.pitch - this.pitchZero) - Math.PI / 2;
-      baqueta1.rotation.y = (this.yaw - this.yawZero);
-      baqueta1.rotation.z = -(this.roll - this.rollZero);
+      baqueta1.rotation.z = (this.roll - this.rollZero);//(this.yaw - this.yawZero) 
+      baqueta1.rotation.y = 0//; ;
+      baqueta1.rotation.x = -(this.pitch - this.pitchZero) + Math.PI / 2;
     },
     setupResizeHandler(camera, renderer) {
       const onResize = () => {

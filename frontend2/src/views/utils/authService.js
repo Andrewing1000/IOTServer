@@ -35,7 +35,7 @@ const authService = {
       const response = await api.get('user/me/');
       return response.data;
     } catch (error) {
-      throw error;
+      return null;
     }
   },
 

@@ -8,6 +8,11 @@ import audioread
 from os import path 
 import tempfile
 
+from django.views.generic.base import View
+from django.urls import path
+
+from django.middleware.common import CommonMiddleware
+
 class InstrumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Instrument

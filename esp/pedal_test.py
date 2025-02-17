@@ -25,7 +25,7 @@ last_pong = -1
 last_click = 0
 
 
-pedal = Pin(32, Pin.IN, pull=Pin.PULL_UP)
+pedal = Pin(27, Pin.IN, pull=Pin.PULL_UP)
 kick_hit = asyncio.Event()
 def pedal_on(pin):
     global last_click, kick_hit
